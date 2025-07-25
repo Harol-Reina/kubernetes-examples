@@ -1,0 +1,101 @@
+# Variables Globales - Kubespray
+# Configuraciones que aplican a todos los nodos del cluster
+
+## Container Runtime
+container_manager: containerd
+containerd_version: 1.7.13
+containerd_archive_checksums:
+  amd64: 'e2d0e0e2c7f2b8b9b2c7d6f4a9e8d7c6'
+
+## Sistema Operativo
+bootstrap_os: ubuntu
+ansible_python_interpreter: /usr/bin/python3
+
+## Configuración SSH
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+ansible_ssh_pipelining: true
+
+## Configuración de Proxy (descomenta si usas proxy)
+# http_proxy: "http://proxy.example.com:8080"
+# https_proxy: "http://proxy.example.com:8080"
+# no_proxy: "localhost,127.0.0.1,10.0.0.0/8,192.168.0.0/16"
+
+## Configuración de Registry
+# Si usas un registry privado, descomenta y configura:
+# docker_insecure_registries:
+#   - "registry.example.com:5000"
+# 
+# containerd_registries:
+#   "registry.example.com:5000":
+#     - "http://registry.example.com:5000"
+
+## Configuración de Firewall
+disable_host_firewall: false
+
+## Logging
+# Configuración de logs del sistema
+rsyslog_enabled: true
+
+## NTP
+# Sincronización de tiempo
+ntp_enabled: true
+
+## Configuración de Kernel
+# Parámetros del kernel para optimización
+kernel_vm_swappiness: 1
+kernel_panic: 10
+kernel_panic_on_oops: 1
+
+## Security
+# Configuración de seguridad del sistema
+sysctl_file_path: "/etc/sysctl.d/99-kubespray.conf"
+
+## Configuración de límites del sistema
+system_max_files: 1048576
+system_max_procs: 1048576
+
+## Configuración de tiempo
+timezone: "UTC"
+
+## DNS
+# Configuración de DNS para resolución
+upstream_dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4
+  - 1.1.1.1
+
+## Configuración de red
+# Interface de red principal (ajusta según tu configuración)
+# ansible_default_ipv4.interface se detecta automáticamente
+
+## Variables de entorno globales
+# Configuraciones que se aplicarán en todos los nodos
+global_env_vars:
+  LC_ALL: "en_US.UTF-8"
+  LANG: "en_US.UTF-8"
+
+## Configuración de certificados
+# Configuración para certificados personalizados
+# Si tienes una CA personalizada:
+# ca_cert_dir: "/usr/local/share/ca-certificates"
+# ca_cert_file: "custom-ca.crt"
+
+## Configuración de recursos del sistema
+# Límites para procesos del sistema
+systemd_max_user_instances: 256
+systemd_max_user_watches: 65536
+
+## Configuración de archivos temporales
+# Limpieza automática de archivos temporales
+tmp_cleanup_enabled: true
+tmp_cleanup_interval: "daily"
+
+## Configuración de logs
+# Rotación de logs del sistema
+log_rotation_enabled: true
+log_retention_days: 30
+
+## Updates del sistema
+# Configuración de actualizaciones automáticas
+auto_updates_enabled: false
+security_updates_enabled: true

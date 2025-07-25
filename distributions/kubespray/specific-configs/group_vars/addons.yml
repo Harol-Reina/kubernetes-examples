@@ -1,0 +1,167 @@
+# Addons Configuration - Kubespray
+# Configuración de componentes opcionales del cluster
+
+## Ingress Controller
+ingress_nginx_enabled: true
+ingress_nginx_version: "v1.8.4"
+ingress_nginx_host_network: false
+ingress_nginx_namespace: "ingress-nginx"
+ingress_nginx_insecure_port: 80
+ingress_nginx_secure_port: 443
+
+# Configuración avanzada del Ingress
+ingress_nginx_extra_args:
+  - --enable-ssl-passthrough
+  - --default-ssl-certificate=ingress-nginx/default-cert
+
+## Metrics Server
+metrics_server_enabled: true
+metrics_server_version: "v0.6.4"
+metrics_server_kubelet_insecure_tls: true
+metrics_server_metric_resolution: 15s
+
+## Dashboard
+dashboard_enabled: true
+dashboard_version: "v2.7.0"
+dashboard_namespace: "kubernetes-dashboard"
+
+# Configuración de acceso al dashboard
+dashboard_rbac_enabled: true
+dashboard_token_ttl: 43200  # 12 horas
+
+## Registry
+registry_enabled: false
+registry_namespace: "kube-registry"
+registry_storage_class: "fast-ssd"
+registry_volume_size: "50Gi"
+
+## Cert Manager
+cert_manager_enabled: true
+cert_manager_version: "v1.13.3"
+cert_manager_namespace: "cert-manager"
+
+# ClusterIssuers para Let's Encrypt
+cert_manager_cluster_issuers:
+  - name: letsencrypt-staging
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@example.com
+  - name: letsencrypt-prod
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@example.com
+
+## ArgoCD
+argocd_enabled: false
+argocd_version: "v2.9.3"
+argocd_namespace: "argocd"
+
+## Prometheus & Grafana
+prometheus_enabled: false
+prometheus_version: "v2.48.1"
+prometheus_namespace: "monitoring"
+prometheus_retention_time: "30d"
+
+grafana_enabled: false
+grafana_version: "10.2.3"
+grafana_namespace: "monitoring"
+
+# Configuración de storage para monitoring
+prometheus_storage_class: "fast-ssd"
+prometheus_storage_size: "100Gi"
+grafana_storage_size: "10Gi"
+
+## CNI Plugins adicionales
+# Multus CNI para múltiples interfaces de red
+multus_enabled: false
+multus_version: "v4.0.2"
+
+## Local Path Provisioner
+local_path_provisioner_enabled: true
+local_path_provisioner_version: "v0.0.24"
+local_path_provisioner_namespace: "local-path-storage"
+local_path_provisioner_storage_class: "local-path"
+
+## MetalLB (para bare metal)
+metallb_enabled: false
+metallb_version: "v0.13.12"
+metallb_namespace: "metallb-system"
+
+# Configuración de pool de IPs para MetalLB
+metallb_ip_range:
+  - "192.168.1.240-192.168.1.250"
+
+## External DNS
+external_dns_enabled: false
+external_dns_version: "0.14.0"
+external_dns_namespace: "external-dns"
+
+# Proveedores soportados: aws, gcp, azure, cloudflare, etc.
+external_dns_provider: "cloudflare"
+
+## Storage Classes adicionales
+additional_storage_classes:
+  - name: "fast-ssd"
+    provisioner: "kubernetes.io/no-provisioner"
+    parameters:
+      type: "fast-ssd"
+    reclaimPolicy: "Retain"
+    volumeBindingMode: "WaitForFirstConsumer"
+  
+  - name: "slow-hdd"
+    provisioner: "kubernetes.io/no-provisioner"
+    parameters:
+      type: "slow-hdd"
+    reclaimPolicy: "Delete"
+    volumeBindingMode: "Immediate"
+
+## Backup con Velero
+velero_enabled: false
+velero_version: "v1.12.1"
+velero_namespace: "velero"
+
+# Configuración de storage para backups
+velero_backup_storage_provider: "aws"  # aws, gcp, azure, minio
+velero_backup_retention: "720h"  # 30 días
+
+## Service Mesh - Istio
+istio_enabled: false
+istio_version: "1.20.1"
+istio_namespace: "istio-system"
+
+# Configuración de Istio
+istio_pilot_resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+## Logging Stack
+# EFK Stack (Elasticsearch, Fluentd, Kibana)
+efk_enabled: false
+elasticsearch_version: "8.11.0"
+fluentd_version: "v1.16.2"
+kibana_version: "8.11.0"
+
+# PLG Stack (Promtail, Loki, Grafana) - alternativa más ligera
+plg_enabled: false
+loki_version: "2.9.4"
+promtail_version: "2.9.4"
+
+## Network Policies por defecto
+default_network_policies_enabled: true
+
+# Políticas de red restrictivas por defecto
+default_deny_all_ingress: true
+default_deny_all_egress: false
+
+## Configuración de DNS personalizado
+custom_dns_enabled: false
+custom_dns_servers:
+  - "8.8.8.8"
+  - "1.1.1.1"
+
+## Configuración de timezone
+ntp_servers:
+  - "pool.ntp.org"
+  - "time.google.com"

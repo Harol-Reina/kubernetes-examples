@@ -1,0 +1,171 @@
+# Variables del Cluster Kubernetes - Kubespray
+# Configuraciones específicas del cluster de Kubernetes
+
+## Información del Cluster
+cluster_name: production-cluster
+kube_version: v1.28.8
+
+## Configuración de Red del Cluster
+kube_network_plugin: calico
+kube_service_addresses: 10.233.0.0/18
+kube_pods_subnet: 10.233.64.0/18
+kube_network_node_prefix: 24
+
+## CNI Configuration
+# Calico
+calico_version: "v3.26.4"
+calico_cni_version: "v3.26.4"
+calico_felix_prometheusmetricsenabled: true
+calico_felix_prometheusmetricsport: 9091
+calico_felix_prometheusgometricsenabled: true
+calico_node_prometheus_port: 9091
+
+# Network Policy
+enable_network_policy: true
+calico_network_policy_enabled: true
+
+## API Server Configuration
+kube_apiserver_bind_address: 0.0.0.0
+kube_apiserver_port: 6443
+kube_apiserver_secure_port: 6443
+
+# Certificados del API Server
+kube_apiserver_cert_sans:
+  - "kubernetes"
+  - "kubernetes.default"
+  - "kubernetes.default.svc"
+  - "kubernetes.default.svc.cluster.local"
+  - "localhost"
+  - "127.0.0.1"
+
+# Request timeout y limits
+kube_apiserver_request_timeout: "300s"
+kube_apiserver_max_requests_inflight: 1200
+kube_apiserver_max_mutating_requests_inflight: 400
+
+## Controller Manager Configuration
+kube_controller_manager_bind_address: 0.0.0.0
+kube_controller_node_monitor_grace_period: 40s
+kube_controller_node_monitor_period: 5s
+kube_controller_pod_eviction_timeout: 5m0s
+kube_controller_terminated_pod_gc_threshold: 50
+
+## Scheduler Configuration
+kube_scheduler_bind_address: 0.0.0.0
+
+## Kubelet Configuration
+kubelet_deployment_type: host
+kubelet_max_pods: 110
+kubelet_pod_pids_limit: 4096
+kubelet_make_iptables_util_chains: true
+
+# Kubelet authentication y authorization
+kubelet_authentication_anonymous_enabled: false
+kubelet_authorization_mode_webhook: true
+
+# Kubelet resource reservations
+kube_reserved: true
+kube_reserved_cgroups_for_service_subset: true
+system_reserved: true
+system_reserved_cgroups: "/system.slice"
+
+# Reservas de recursos del sistema
+system_memory_reserved: "512Mi"
+system_cpu_reserved: "500m"
+kube_memory_reserved: "256Mi"
+kube_cpu_reserved: "100m"
+
+## Proxy Configuration
+kube_proxy_mode: ipvs
+kube_proxy_strict_arp: true
+kube_proxy_metrics_bind_address: 0.0.0.0:10249
+
+## DNS Configuration
+dns_mode: coredns
+coredns_version: "v1.10.1"
+enable_nodelocaldns: true
+nodelocaldns_version: "1.22.20"
+nodelocaldns_health_port: 9254
+
+# DNS configuración avanzada
+coredns_k8s_external_zone: "cluster.local"
+coredns_external_zones:
+- zones:
+  - example.com
+  nameservers:
+  - 1.1.1.1
+  - 8.8.8.8
+
+## Storage Configuration
+# Default storage class
+default_storage_class: "fast-ssd"
+
+## Security Configuration
+# RBAC
+rbac_enabled: true
+
+# Pod Security Standards
+pod_security_policy_enabled: false
+kube_pod_security_use_default: true
+kube_pod_security_default_enforce: "restricted"
+
+# Encryption at rest
+kube_encrypt_secret_data: true
+
+# Audit logging
+kubernetes_audit: true
+audit_log_path: "/var/log/audit.log"
+audit_log_maxage: 30
+audit_log_maxbackups: 10
+audit_log_maxsize: 100
+
+## Admission Controllers
+kube_apiserver_enable_admission_plugins:
+  - NamespaceLifecycle
+  - LimitRanger
+  - ServiceAccount
+  - DefaultStorageClass
+  - DefaultTolerationSeconds
+  - MutatingAdmissionWebhook
+  - ValidatingAdmissionWebhook
+  - ResourceQuota
+  - Priority
+  - PodSecurityPolicy
+
+## Feature Gates
+kube_feature_gates:
+  - "RotateKubeletServerCertificate=true"
+  - "CSIMigration=true"
+  - "EphemeralContainers=true"
+
+## Metrics y Monitoring
+kubelet_cgroup_driver: systemd
+kubelet_rotate_certificates: true
+kubelet_rotate_server_certificates: true
+
+## Configuración de certificados
+certificates_key_size: 2048
+certificates_duration: 8760h  # 1 año
+
+## ETCD Configuration
+etcd_deployment_type: host
+etcd_memory_limit: "2G"
+etcd_quota_backend_bytes: "8589934592"  # 8GB
+etcd_snapshot_count: 10000
+etcd_heartbeat_interval: "100"
+etcd_election_timeout: "1000"
+
+## Load Balancer Configuration
+# Para alta disponibilidad con LB externo
+kube_control_plane_lb: true
+# kube_apiserver_access_addresses: ["10.0.1.5"]  # IP del LB externo
+
+## Configuración de nodos
+kube_read_only_port: 0  # Deshabilitar puerto read-only por seguridad
+kubelet_streaming_connection_idle_timeout: "5m"
+
+## Configuración de tolerancias
+node_taints: []  # Sin taints por defecto en workers
+
+## Configuración de logs
+kube_log_level: 2
