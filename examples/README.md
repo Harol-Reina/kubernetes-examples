@@ -69,8 +69,25 @@ examples/
     │   └── hpa.yaml             # Horizontal Pod Autoscaler
     ├── 3. Seguridad/            # Políticas de seguridad
     │   └── security-network-policies.yaml # Políticas de red
-    └── 4. Recursos y Límites/   # Gestión de recursos
-        └── resource-quotas.yaml # Cuotas y límites de recursos
+    ├── 4. Recursos y Límites/   # Gestión de recursos
+    │   └── resource-quotas.yaml # Cuotas y límites de recursos
+    └── 5. Monitoreo/            # Stack de observabilidad
+        ├── README.md            # Guía completa de monitoreo
+        ├── prometheus/
+        │   ├── prometheus-config.yaml # ConfigMap con configuración
+        │   ├── prometheus-deployment.yaml # Deployment de Prometheus
+        │   ├── prometheus-service.yaml # Servicio de Prometheus
+        │   └── prometheus-rbac.yaml # RBAC para scraping
+        ├── grafana/
+        │   ├── grafana-deployment.yaml # Deployment de Grafana
+        │   ├── grafana-service.yaml # Servicio de Grafana
+        │   ├── grafana-configmap.yaml # Dashboards preconfigured
+        │   └── grafana-pvc.yaml # Persistencia para dashboards
+        ├── node-exporter/
+        │   └── node-exporter-daemonset.yaml # Node metrics
+        ├── kube-state-metrics/
+        │   └── kube-state-metrics.yaml # K8s cluster metrics
+        └── monitoring-stack.yaml # Deploy completo todo-en-uno
 ```
 
 ## 🎯 Categorías de Ejemplos
@@ -197,12 +214,13 @@ Casos de uso específicos y aplicaciones complejas:
 - **3. Jobs/**: Procesamiento paralelo y backups
 - **4. CronJobs/**: Tareas programadas y limpieza
 
-### 🏭 Production/ - Enterprise Ready (5 archivos)
+### 🏭 Production/ - Enterprise Ready (15+ archivos)
 Configuraciones listas para producción:
 - **1. Alta Disponibilidad/**: Deployments resilientes
 - **2. Autoscaling/**: HPA con métricas avanzadas
 - **3. Seguridad/**: Network Policies y micro-segmentación
 - **4. Recursos y Límites/**: ResourceQuotas y governance
+- **5. Monitoreo/**: Stack Prometheus-Grafana completo
 
 ## ⭐ Características Destacadas
 
@@ -257,6 +275,9 @@ kubectl apply -f examples/advanced/"1. StatefulSets/"
 
 # Jobs para tareas batch
 kubectl apply -f examples/advanced/"3. Jobs/"
+
+# Stack completo de monitoreo
+kubectl apply -f examples/production/"5. Monitoreo/"
 
 # Configuraciones de producción
 kubectl apply -f examples/production/

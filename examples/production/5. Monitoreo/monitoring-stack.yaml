@@ -1,0 +1,35 @@
+# Namespace para monitoreo
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+# Script de setup rápido - Ejecutar todos los componentes del stack
+# kubectl apply -f monitoring-stack.yaml
+
+# Para aplicar por componentes:
+# kubectl apply -f prometheus/
+# kubectl apply -f grafana/  
+# kubectl apply -f node-exporter/
+# kubectl apply -f kube-state-metrics/
+
+# Acceso a los servicios:
+# Prometheus: kubectl port-forward -n monitoring service/prometheus 9090:9090
+# Grafana: kubectl port-forward -n monitoring service/grafana 3000:3000
+
+# Nota: Este archivo es un placeholder. 
+# Para el stack completo, aplica todas las carpetas de componentes:
+#
+# find prometheus/ grafana/ node-exporter/ kube-state-metrics/ -name "*.yaml" -exec kubectl apply -f {} \;
+#
+# O mejor aún, usa un script de automatización:
+#!/bin/bash
+# echo "Desplegando stack de monitoreo..."
+# kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+# kubectl apply -f prometheus/
+# kubectl apply -f node-exporter/
+# kubectl apply -f kube-state-metrics/
+# kubectl apply -f grafana/
+# echo "Stack desplegado. Accede con:"
+# echo "Prometheus: kubectl port-forward -n monitoring service/prometheus 9090:9090"
+# echo "Grafana: kubectl port-forward -n monitoring service/grafana 3000:3000"

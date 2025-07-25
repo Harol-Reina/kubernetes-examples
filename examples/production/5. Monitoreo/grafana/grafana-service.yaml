@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+  - name: web
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+---
+# Opcional: LoadBalancer para acceso externo
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: grafana-external
+#   namespace: monitoring
+#   labels:
+#     app: grafana
+# spec:
+#   selector:
+#     app: grafana
+#   ports:
+#   - name: web
+#     port: 3000
+#     targetPort: 3000
+#     protocol: TCP
+#   type: LoadBalancer
