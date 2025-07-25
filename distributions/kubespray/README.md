@@ -21,28 +21,28 @@ Kubespray es una herramienta que utiliza Ansible para desplegar y gestionar clus
 
 ### Prerrequisitos
 ```bash
-# Instalar Ansible
+# 1. Instalar Ansible
 sudo apt update && sudo apt install -y python3-pip
 pip3 install ansible netaddr
 
-# Clonar Kubespray
+# 2. Clonar Kubespray
 git clone https://github.com/kubernetes-sigs/kubespray.git
 cd kubespray
 
-# Instalar dependencias
+# 3. Instalar dependencias
 sudo pip3 install -r requirements.txt
 ```
 
 ### Configuración Básica
 ```bash
-# Copiar inventario de ejemplo
+# 1. Copiar inventario de ejemplo
 cp -rfp inventory/sample inventory/mycluster
 
-# Configurar IPs de los nodos
+# 2. Configurar IPs de los nodos (EDITAR CON TUS IPs)
 declare -a IPS=(10.10.1.3 10.10.1.4 10.10.1.5)
 CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
 
-# Revisar y personalizar configuración
+# 3. Desplegar cluster
 ansible-playbook -i inventory/mycluster/hosts.yaml --become --become-user=root cluster.yml
 ```
 
@@ -118,15 +118,26 @@ Scripts que automatizan operaciones comunes:
 
 ## 🛠️ Comandos Esenciales
 
+> **💡 Tip**: En GitHub, cada bloque de código tiene un botón de copia (📋) en la esquina superior derecha. ¡Úsalo para copiar comandos fácilmente!
+
+### ⚡ Comandos de Un Solo Paso
+```bash
+# Instalación completa de Ansible + dependencias
+curl -fsSL https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt | sudo pip3 install -r /dev/stdin && sudo apt update && sudo apt install -y python3-pip ansible
+
+# Configuración rápida de inventario (EDITAR IPs)
+declare -a IPS=(10.10.1.3 10.10.1.4 10.10.1.5) && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
+```
+
 ### Despliegue Inicial
 ```bash
-# Preparar inventario
+# 1. Preparar inventario
 ./automation/prepare-inventory.sh
 
-# Desplegar cluster
+# 2. Desplegar cluster
 ./automation/deploy-cluster.sh production
 
-# Verificar instalación
+# 3. Verificar instalación
 kubectl get nodes
 kubectl get pods --all-namespaces
 ```
@@ -227,6 +238,47 @@ docker_log_opts:
 - [Best Practices](https://kubespray.io/#/docs/kubernetes-reliability)
 - [Troubleshooting Guide](https://kubespray.io/#/docs/troubleshooting)
 
+## 🚀 Scripts de Conveniencia
+
+### Quick Setup Script
+Guarda este script como `kubespray-setup.sh` para instalación rápida:
+```bash
+#!/bin/bash
+# Instalación rápida de Kubespray
+
+# Colores
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}🚀 Instalando Kubespray...${NC}"
+
+# 1. Instalar dependencias
+sudo apt update && sudo apt install -y python3-pip git
+pip3 install ansible netaddr
+
+# 2. Clonar Kubespray
+git clone https://github.com/kubernetes-sigs/kubespray.git
+cd kubespray
+pip3 install -r requirements.txt
+
+# 3. Preparar inventario
+cp -rfp inventory/sample inventory/mycluster
+
+echo -e "${GREEN}✅ Kubespray instalado. Edita inventory/mycluster/hosts.yaml con tus IPs${NC}"
+echo -e "${BLUE}📝 Luego ejecuta: ansible-playbook -i inventory/mycluster/hosts.yaml --become cluster.yml${NC}"
+```
+
+### Verificación Rápida
+```bash
+# Script para verificar estado del cluster
+kubectl get nodes -o wide && \
+kubectl get pods --all-namespaces | grep -E "(kube-system|default)" && \
+kubectl cluster-info
+```
+
 ---
 
 **💡 Consejo**: Kubespray es ideal para despliegues de producción donde necesitas control total sobre la configuración del cluster y automatización completa del proceso de despliegue.
+
+**📋 Copia fácil**: En GitHub, haz clic en el botón de copia que aparece al pasar el cursor sobre cualquier bloque de código.
