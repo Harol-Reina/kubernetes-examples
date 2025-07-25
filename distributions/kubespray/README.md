@@ -17,11 +17,111 @@ Kubespray es una herramienta que utiliza Ansible para desplegar y gestionar clus
 - **🛡️ Alta disponibilidad**: Control plane distribuido
 - **📊 Monitoreo integrado**: Prometheus, Grafana opcionales
 
-## 🚀 Instalación Rápida
+## � Prerrequisitos del Sistema
 
-### Prerrequisitos
+### ⚠️ Configuración Inicial del Servidor
+Kubespray se ejecuta desde un **servidor de control** (puede ser tu laptop o un servidor dedicado) y despliega Kubernetes en **nodos objetivo**. Para servidores Debian con instalación básica:
+
+#### 🔧 Configurar sudo en Debian
+Si tu servidor Debian tiene solo SSH y no tiene `sudo` instalado:
 ```bash
-# 1. Instalar Ansible
+# Conectarse como root
+su -
+
+# Instalar sudo
+apt update && apt install sudo
+
+# Agregar usuario al grupo sudo (reemplaza 'usuario' con tu nombre de usuario)
+usermod -aG sudo usuario
+
+# Verificar configuración
+groups usuario
+```
+📚 **Guía completa**: [Configuración de sudo en Debian](https://harol-reina.github.io/blog/post-3/)
+
+#### 🔑 Configurar Claves SSH
+Para conectarse a los nodos sin contraseña, necesitas configurar claves SSH:
+```bash
+# Generar clave SSH (si no tienes una)
+ssh-keygen -t rsa -b 4096 -C "tu-email@ejemplo.com"
+
+# Copiar clave pública a cada nodo objetivo
+ssh-copy-id usuario@ip-del-nodo
+
+# Verificar conexión sin contraseña
+ssh usuario@ip-del-nodo
+```
+📚 **Guía completa**: [Configuración de claves SSH](https://harol-reina.github.io/blog/post-5/)
+
+#### 🖥️ Requisitos de los Nodos Objetivo
+Los nodos donde se instalará Kubernetes deben tener:
+```bash
+# En cada nodo objetivo (masters y workers):
+# 1. Sistema operativo soportado (Ubuntu 20.04+, Debian 11+, CentOS 8+)
+# 2. Usuario con privilegios sudo
+# 3. Acceso SSH configurado
+# 4. Al menos 2GB RAM (4GB+ recomendado para masters)
+# 5. Al menos 2 CPU cores
+# 6. 20GB+ de espacio en disco
+
+# Verificar recursos en cada nodo:
+free -h  # Memoria RAM
+nproc    # CPUs
+df -h    # Espacio en disco
+```
+
+### 🐳 Instalar Docker (Para método recomendado)
+```bash
+# Instalar Docker en el servidor de control
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Agregar usuario al grupo docker
+sudo usermod -aG docker $USER
+
+# Reiniciar sesión o ejecutar
+newgrp docker
+
+# Verificar instalación
+docker --version
+```
+
+### ✅ Verificación de Prerrequisitos
+Antes de continuar, asegúrate de tener:
+- [ ] `sudo` configurado en el servidor de control
+- [ ] Docker instalado en el servidor de control
+- [ ] Claves SSH configuradas para acceso sin contraseña a todos los nodos
+- [ ] Conectividad de red entre el servidor de control y los nodos objetivo
+
+## �🚀 Instalación Rápida
+
+### Método Recomendado: Docker (Sin dependencias locales)
+```bash
+# 1. Clonar Kubespray en el servidor de control
+git clone https://github.com/kubernetes-sigs/kubespray.git
+cd kubespray
+
+# 2. Configurar inventario con las IPs de tus nodos
+# IMPORTANTE: Edita inventory/sample/inventory.ini con las IPs reales de tus nodos
+# Ejemplo: node1 ansible_host=192.168.1.10 ansible_user=usuario
+nano inventory/sample/inventory.ini
+
+# 3. Ejecutar contenedor con Kubespray y dependencias incluidas
+docker run --rm -it --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash
+
+# 4. Dentro del contenedor, verificar conectividad y ejecutar el playbook:
+# Verificar acceso SSH a todos los nodos
+ansible all -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa -m ping
+
+# Desplegar Kubernetes
+ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa cluster.yml
+```
+
+### Método Tradicional: Instalación Local
+```bash
+# 1. Instalar Ansible y dependencias
 sudo apt update && sudo apt install -y python3-pip
 pip3 install ansible netaddr
 
@@ -29,20 +129,17 @@ pip3 install ansible netaddr
 git clone https://github.com/kubernetes-sigs/kubespray.git
 cd kubespray
 
-# 3. Instalar dependencias
+# 3. Instalar dependencias de Python
 sudo pip3 install -r requirements.txt
-```
 
-### Configuración Básica
-```bash
-# 1. Copiar inventario de ejemplo
+# 4. Configurar inventario
 cp -rfp inventory/sample inventory/mycluster
 
-# 2. Configurar IPs de los nodos (EDITAR CON TUS IPs)
+# 5. Configurar IPs de los nodos (EDITAR CON TUS IPs)
 declare -a IPS=(10.10.1.3 10.10.1.4 10.10.1.5)
 CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
 
-# 3. Desplegar cluster
+# 6. Desplegar cluster
 ansible-playbook -i inventory/mycluster/hosts.yaml --become --become-user=root cluster.yml
 ```
 
@@ -120,7 +217,43 @@ Scripts que automatizan operaciones comunes:
 
 > **💡 Tip**: En GitHub, cada bloque de código tiene un botón de copia (📋) en la esquina superior derecha. ¡Úsalo para copiar comandos fácilmente!
 
-### ⚡ Comandos de Un Solo Paso
+### 🐳 Comandos Docker (Recomendado)
+
+#### Configuración con Docker
+```bash
+# 1. Descargar imagen de Kubespray
+docker pull quay.io/kubespray/kubespray:v2.28.0
+
+# 2. Ejecutar contenedor interactivo con montajes
+docker run --rm -it \
+  --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash
+
+# 3. Dentro del contenedor: Desplegar cluster
+ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa cluster.yml
+```
+
+#### Operaciones del Cluster con Docker
+```bash
+# Actualizar cluster existente
+docker run --rm -it \
+  --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash -c \
+  "ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa upgrade-cluster.yml"
+
+# Escalar cluster (añadir nodos)
+docker run --rm -it \
+  --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash -c \
+  "ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa scale.yml"
+```
+
+### ⚡ Comandos Tradicionales (Ansible Local)
+
+#### Configuración rápida
 ```bash
 # Instalación completa de Ansible + dependencias
 curl -fsSL https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/requirements.txt | sudo pip3 install -r /dev/stdin && sudo apt update && sudo apt install -y python3-pip ansible
@@ -129,7 +262,7 @@ curl -fsSL https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/re
 declare -a IPS=(10.10.1.3 10.10.1.4 10.10.1.5) && CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
 ```
 
-### Despliegue Inicial
+#### Despliegue Inicial
 ```bash
 # 1. Preparar inventario
 ./automation/prepare-inventory.sh
@@ -165,7 +298,41 @@ kubectl apply -f specific-configs/network-plugins/calico-policies.yaml
 
 ## 📊 Monitoreo y Troubleshooting
 
-### Health Checks
+### Health Checks con Docker
+```bash
+# Verificar estado del cluster usando Docker
+docker run --rm -it \
+  --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash -c \
+  "ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa cluster.yml --tags=health-check"
+
+# Verificar conectividad de red
+docker run --rm -it \
+  --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash -c \
+  "ansible all -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa -m ping"
+```
+
+### Logs y Debugging con Docker
+```bash
+# Logs de kubelet en todos los nodos
+docker run --rm -it \
+  --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash -c \
+  "ansible all -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa -m shell -a 'journalctl -u kubelet --no-pager -l'"
+
+# Estado de servicios críticos
+docker run --rm -it \
+  --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
+  --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
+  quay.io/kubespray/kubespray:v2.28.0 bash -c \
+  "ansible masters -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa -m shell -a 'systemctl status kubelet kube-apiserver'"
+```
+
+### Health Checks Tradicionales
 ```bash
 # Verificar estado del cluster
 ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml --tags=health-check
@@ -174,7 +341,7 @@ ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml --tags=health-che
 ansible-playbook -i inventory/mycluster/hosts.yaml cluster.yml --tags=network-test
 ```
 
-### Logs y Debugging
+### Logs y Debugging Tradicionales
 ```bash
 # Logs de kubelet en todos los nodos
 ansible all -i inventory/mycluster/hosts.yaml -m shell -a "journalctl -u kubelet --no-pager -l"
@@ -240,18 +407,63 @@ docker_log_opts:
 
 ## 🚀 Scripts de Conveniencia
 
-### Quick Setup Script
-Guarda este script como `kubespray-setup.sh` para instalación rápida:
+### Docker Setup Script (Recomendado)
+Guarda este script como `kubespray-docker-setup.sh` para instalación rápida con Docker:
 ```bash
 #!/bin/bash
-# Instalación rápida de Kubespray
+# Instalación rápida de Kubespray con Docker
+
+# Colores
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo -e "${BLUE}🚀 Configurando Kubespray con Docker...${NC}"
+
+# 1. Verificar Docker
+if ! command -v docker &> /dev/null; then
+    echo -e "${RED}❌ Docker no está instalado. Instálalo primero.${NC}"
+    exit 1
+fi
+
+# 2. Clonar Kubespray
+echo -e "${BLUE}📥 Clonando Kubespray...${NC}"
+git clone https://github.com/kubernetes-sigs/kubespray.git
+cd kubespray
+
+# 3. Descargar imagen de Kubespray
+echo -e "${BLUE}📥 Descargando imagen de Kubespray v2.28.0...${NC}"
+docker pull quay.io/kubespray/kubespray:v2.28.0
+
+# 4. Verificar clave SSH
+if [ ! -f "${HOME}/.ssh/id_rsa" ]; then
+    echo -e "${RED}❌ No se encontró clave SSH privada en ${HOME}/.ssh/id_rsa${NC}"
+    echo -e "${BLUE}💡 Genera una con: ssh-keygen -t rsa -b 4096${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Kubespray configurado con Docker${NC}"
+echo -e "${BLUE}📝 Edita inventory/sample/inventory.ini con tus IPs${NC}"
+echo -e "${BLUE}🚀 Luego ejecuta:${NC}"
+echo -e "${BLUE}docker run --rm -it \\${NC}"
+echo -e "${BLUE}  --mount type=bind,source=\"\$(pwd)\"/inventory/sample,dst=/inventory \\${NC}"
+echo -e "${BLUE}  --mount type=bind,source=\"\${HOME}\"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \\${NC}"
+echo -e "${BLUE}  quay.io/kubespray/kubespray:v2.28.0 bash${NC}"
+```
+
+### Setup Script Tradicional
+Guarda este script como `kubespray-setup.sh` para instalación local:
+```bash
+#!/bin/bash
+# Instalación rápida de Kubespray tradicional
 
 # Colores
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}🚀 Instalando Kubespray...${NC}"
+echo -e "${BLUE}🚀 Instalando Kubespray localmente...${NC}"
 
 # 1. Instalar dependencias
 sudo apt update && sudo apt install -y python3-pip git
@@ -279,6 +491,8 @@ kubectl cluster-info
 
 ---
 
-**💡 Consejo**: Kubespray es ideal para despliegues de producción donde necesitas control total sobre la configuración del cluster y automatización completa del proceso de despliegue.
+**💡 Consejo**: Kubespray con Docker elimina problemas de dependencias y es ideal para despliegues de producción donde necesitas control total sobre la configuración del cluster.
+
+**🐳 Ventaja Docker**: Sin necesidad de instalar Ansible, Python o dependencias locales. Todo viene incluido en la imagen oficial.
 
 **📋 Copia fácil**: En GitHub, haz clic en el botón de copia que aparece al pasar el cursor sobre cualquier bloque de código.
