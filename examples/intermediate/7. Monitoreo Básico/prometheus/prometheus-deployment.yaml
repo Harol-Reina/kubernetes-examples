@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.48.0
+        args:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+        - '--storage.tsdb.path=/prometheus/'
+        - '--web.console.libraries=/etc/prometheus/console_libraries'
+        - '--web.console.templates=/etc/prometheus/consoles'
+        - '--storage.tsdb.retention.time=7d'    # Solo 7 días para ahorrar espacio
+        - '--storage.tsdb.retention.size=4GB'   # Máximo 4GB de 5GB disponibles
+        - '--web.enable-lifecycle'
+        - '--web.enable-admin-api'
+        - '--storage.tsdb.wal-compression'      # Compresión para ahorrar espacio
+        - '--query.max-concurrency=4'           # Limitar concurrencia
+        - '--query.max-samples=5000000'         # Limitar samples para bare metal
+        ports:
+        - containerPort: 9090
+          name: web
+        # Recursos optimizados para bare metal
+        resources:
+          requests:
+            memory: "256Mi"    # Reducido de 512Mi
+            cpu: "100m"        # Reducido de 250m
+          limits:
+            memory: "512Mi"    # Reducido de 2Gi
+            cpu: "500m"        # Reducido de 1000m
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus/
+        - name: prometheus-storage
+          mountPath: /prometheus/
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 15      # Menos frecuente
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        # Optimizaciones de seguridad básicas
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          allowPrivilegeEscalation: false
+      volumes:
+      - name: prometheus-config
+        configMap:
+          name: prometheus-config
+      - name: prometheus-storage
+        persistentVolumeClaim:
+          claimName: prometheus-pvc
+      # Toleraciones para nodos con taints
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi    # Reducido de 50Gi para bare metal
+  # Para bare metal, usar local storage si está disponible
+  # storageClassName: local-storage
+  # 
+  # Si no tienes StorageClass, puedes usar hostPath (menos recomendado):
+  # Crear manualmente un PV con hostPath en cada nodo

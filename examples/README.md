@@ -47,7 +47,21 @@ examples/
 │   │   ├── webapp-service.yaml  # Servicio web app
 │   │   ├── app1-deployment.yaml # App 1 para Ingress
 │   │   └── app2-deployment.yaml # App 2 para Ingress
-│   └── 6. Múltiples Aplicaciones con Ingress/ # Routing avanzado
+│   ├── 6. Múltiples Aplicaciones con Ingress/ # Routing avanzado
+│   └── 7. Monitoreo Básico/     # Stack ligero Prometheus-Grafana
+│       ├── README.md            # Guía de monitoreo para bare metal
+│       ├── prometheus/
+│       │   ├── prometheus-config.yaml # Configuración optimizada
+│       │   ├── prometheus-deployment.yaml # Deployment ligero
+│       │   ├── prometheus-service.yaml # Servicio básico
+│       │   └── prometheus-rbac.yaml # RBAC mínimo
+│       ├── grafana/
+│       │   ├── grafana-deployment.yaml # Deployment básico
+│       │   ├── grafana-service.yaml # Servicio ClusterIP
+│       │   └── grafana-configmap.yaml # Dashboards esenciales
+│       ├── node-exporter/
+│       │   └── node-exporter-daemonset.yaml # Node metrics ligero
+│       └── monitoring-stack.yaml # Deploy todo-en-uno
 ├── advanced/                     # Ejemplos avanzados
 │   ├── README.md                # Guía de ejemplos avanzados
 │   ├── 1. StatefulSets/         # Aplicaciones con estado
@@ -198,7 +212,7 @@ Conceptos esenciales para empezar con Kubernetes:
 - **4. Services para Deployments/**: Conexión de servicios
 - **5. ReplicaSets/**: Control directo de réplicas
 
-### 🔧 Intermediate/ - Configuraciones Robustas (18 archivos)
+### 🔧 Intermediate/ - Configuraciones Robustas (25+ archivos)
 Aplicaciones más complejas y configurables:
 - **1. Ingress/**: Routing HTTP básico y avanzado
 - **2. ConfigMaps/**: Configuración externalizada
@@ -206,6 +220,7 @@ Aplicaciones más complejas y configurables:
 - **4. Volumes y Storage/**: Persistencia de datos
 - **5. Aplicaciones Multi-contenedor/**: Stacks completos (MySQL + WebApp)
 - **6. Múltiples Aplicaciones con Ingress/**: Routing complejo
+- **7. Monitoreo Básico/**: Stack Prometheus-Grafana para bare metal
 
 ### ⚡ Advanced/ - Workloads Especializados (6 archivos)
 Casos de uso específicos y aplicaciones complejas:

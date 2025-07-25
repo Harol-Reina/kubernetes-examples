@@ -1,0 +1,209 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s     # Menos frecuente para ahorrar recursos
+      evaluation_interval: 30s # Menos frecuente para ahorrar recursos
+      
+    rule_files:
+      - "alert_rules.yml"
+      
+    # Sin alertmanager para simplicidad en bare metal
+    # alerting:
+    #   alertmanagers:
+    #   - static_configs:
+    #     - targets:
+    #       - alertmanager:9093
+          
+    scrape_configs:
+      # Kubernetes API Server (solo métricas básicas)
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true  # Para clusters sin certificados firmados
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+        # Filtrar solo métricas esenciales
+        metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: 'apiserver_(request_duration_seconds|request_total|up)'
+          action: keep
+          
+      # Kubernetes nodes (kubelet) - optimizado
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true  # Para clusters sin certificados firmados
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+        # Solo métricas esenciales del kubelet
+        metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: 'kubelet_(running_containers|running_pods|volume_stats.*)'
+          action: keep
+          
+      # Node Exporter - métricas selectivas para bare metal
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          action: keep
+          regex: node-exporter
+        - source_labels: [__meta_kubernetes_endpoint_address_target_name]
+          target_label: instance
+        - source_labels: [__meta_kubernetes_endpoint_address_target_name]
+          target_label: node
+        # Solo métricas críticas para bare metal
+        metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: 'node_(cpu_seconds_total|memory_.*|filesystem_.*|network_.*|load.*|up)'
+          action: keep
+          
+      # Kubernetes service endpoints (simplificado)
+      - job_name: 'kubernetes-service-endpoints'
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_service_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_service_name]
+          action: replace
+          target_label: kubernetes_name
+          
+      # Kubernetes pods (solo los anotados)
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+        # Filtrar solo métricas básicas de pods
+        metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: 'container_(cpu_usage_seconds_total|memory_working_set_bytes|network_.*|up)'
+          action: keep
+        
+  alert_rules.yml: |
+    groups:
+    - name: kubernetes-critical-bare-metal
+      rules:
+      # Alertas críticas para bare metal con recursos limitados
+      
+      - alert: NodeDown
+        expr: up{job="kubernetes-nodes"} == 0
+        for: 3m  # Más rápido que producción por recursos limitados
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }} is down"
+          description: "Node {{ $labels.instance }} has been down for more than 3 minutes."
+          
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage on {{ $labels.instance }} is above 85% ({{ $value | humanizePercentage }})."
+          
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"} < 0.10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage on {{ $labels.instance }} is above 90%. Available: {{ $value | humanizeBytes }}"
+          
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m  # Más tolerante en bare metal
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage on {{ $labels.instance }} is above 80% ({{ $value | printf \"%.2f\" }}%)."
+          
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[10m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is crash looping"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently."
+          
+      - alert: PodNotReady
+        expr: kube_pod_status_ready{condition="false"} == 1
+        for: 10m  # Más tolerante en bare metal
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} not ready"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 10 minutes."
+          
+      # Alerta específica para el stack de monitoreo
+      - alert: MonitoringStackDown
+        expr: up{job=~"prometheus|grafana"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Monitoring component {{ $labels.job }} is down"
+          description: "Monitoring component {{ $labels.job }} has been down for more than 2 minutes."

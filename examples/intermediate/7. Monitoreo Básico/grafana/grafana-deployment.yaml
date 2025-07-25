@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.2.2
+        ports:
+        - containerPort: 3000
+          name: web
+        env:
+        # Configuración básica sin SSL
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin"
+        - name: GF_SECURITY_ADMIN_USER
+          value: "admin"
+        - name: GF_SERVER_HTTP_PORT
+          value: "3000"
+        - name: GF_SERVER_PROTOCOL
+          value: "http"                    # HTTP para simplicidad
+        - name: GF_SECURITY_ALLOW_EMBEDDING
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "false"
+        - name: GF_ANALYTICS_REPORTING_ENABLED
+          value: "false"                   # Deshabilitar telemetría
+        - name: GF_ANALYTICS_CHECK_FOR_UPDATES
+          value: "false"
+        # Optimizaciones para bare metal
+        - name: GF_DEFAULT_INSTANCE_NAME
+          value: "bare-metal-monitoring"
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_EXPLORE_ENABLED
+          value: "true"
+        # Recursos optimizados para bare metal
+        resources:
+          requests:
+            memory: "128Mi"    # Reducido de 256Mi
+            cpu: "50m"         # Reducido de 100m
+          limits:
+            memory: "256Mi"    # Reducido de 512Mi
+            cpu: "200m"        # Reducido de 500m
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: grafana-dashboards-config
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-dashboards
+          mountPath: /var/lib/grafana/dashboards
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        # Seguridad básica
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 472
+          allowPrivilegeEscalation: false
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
+      - name: grafana-dashboards-config
+        configMap:
+          name: grafana-dashboards-config
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi    # Reducido de 10Gi para bare metal
+  # Para bare metal con local storage
+  # storageClassName: local-storage

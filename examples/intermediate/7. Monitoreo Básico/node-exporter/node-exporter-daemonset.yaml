@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels:
+    app: node-exporter
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+        component: monitoring
+    spec:
+      serviceAccountName: node-exporter
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: node-exporter
+        image: prom/node-exporter:v1.7.0
+        # Recursos optimizados para bare metal
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 200m
+            memory: 64Mi
+        args:
+        # Configuración optimizada para bare metal
+        - --path.procfs=/host/proc
+        - --path.sysfs=/host/sys
+        - --path.rootfs=/host/root
+        - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+        - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$$
+        # Collectors optimizados para reducir overhead
+        - --collector.cpu
+        - --collector.filesystem
+        - --collector.loadavg
+        - --collector.meminfo
+        - --collector.diskstats
+        - --collector.netdev
+        - --collector.systemd
+        - --collector.uname
+        - --no-collector.arp
+        - --no-collector.bcache
+        - --no-collector.bonding
+        - --no-collector.conntrack
+        - --no-collector.entropy
+        - --no-collector.edac
+        - --no-collector.hwmon
+        - --no-collector.infiniband
+        - --no-collector.ipvs
+        - --no-collector.mdadm
+        - --no-collector.nfs
+        - --no-collector.nfsd
+        - --no-collector.powersupplyclass
+        - --no-collector.pressure
+        - --no-collector.rapl
+        - --no-collector.schedstat
+        - --no-collector.sockstat
+        - --no-collector.thermal_zone
+        - --no-collector.time
+        - --no-collector.timex
+        - --no-collector.udp_queues
+        - --no-collector.xfs
+        - --no-collector.zfs
+        ports:
+        - name: metrics
+          containerPort: 9100
+          hostPort: 9100
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 30
+          periodSeconds: 60
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          timeoutSeconds: 5
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: root
+          mountPath: /host/root
+          mountPropagation: HostToContainer
+          readOnly: true
+      tolerations:
+      # Permite ejecutar en todos los nodos, incluyendo master
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+      volumes:
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: root
+        hostPath:
+          path: /
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
