@@ -117,7 +117,7 @@ cd kubespray
 
 # 2. Configurar inventario con las IPs de tus nodos
 # IMPORTANTE: Edita inventory/sample/inventory.ini con las IPs reales de tus nodos
-# Ejemplo:
+# Ejemplo Basico como Worker y nodo: 
 # [kube_control_plane]
 # worker ansible_host=192.168.1.160
 #
@@ -125,7 +125,7 @@ cd kubespray
 # kube_control_plane
 #
 # [kube_node]
-# worker ansible_host=192.168.1.150
+# worker ansible_host=192.168.1.160
 #
 # [all:vars]
 # ansible_user=<usuario creado>
