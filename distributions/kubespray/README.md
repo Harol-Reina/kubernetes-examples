@@ -117,7 +117,22 @@ cd kubespray
 
 # 2. Configurar inventario con las IPs de tus nodos
 # IMPORTANTE: Edita inventory/sample/inventory.ini con las IPs reales de tus nodos
-# Ejemplo: node1 ansible_host=192.168.1.10 ansible_user=usuario
+# Ejemplo:
+# [kube_control_plane]
+# worker ansible_host=192.168.1.160
+#
+# [etcd:children]
+# kube_control_plane
+#
+# [kube_node]
+# worker ansible_host=192.168.1.150
+#
+# [all:vars]
+# ansible_user=<usuario creado>
+# ansible_become=true
+# ansible_become_user=root
+# ansible_become_pass=<pasword de root (Sistemas Debian)>
+
 nano inventory/sample/inventory.ini
 
 # 3. Ejecutar contenedor con Kubespray y dependencias incluidas
