@@ -6,17 +6,102 @@ Este directorio contiene ejemplos prácticos de configuraciones de Kubernetes qu
 
 ```
 examples/
-├── README.md                 # Esta guía
-├── web-app/                 # Aplicación web simple con nginx
-├── webapp-db/               # Aplicación multi-contenedor con MySQL
-├── config-demo/             # Demostración de ConfigMaps y Secrets
-├── ingress-demo/            # Configuración de Ingress Controller
-├── storage/                 # Volúmenes persistentes
-├── jobs/                    # Jobs y CronJobs
-├── autoscaling/             # Horizontal Pod Autoscaler (HPA)
-├── dev-env/                 # Entorno de desarrollo
-└── monitoring/              # Ejemplos de monitoreo básico
+├── README.md                     # Este archivo
+├── basic/                        # Ejemplos básicos de Kubernetes
+│   ├── README.md                # Guía de ejemplos básicos
+│   ├── 1. Pods/                 # Conceptos básicos de Pods
+│   │   ├── pod-simple.yaml      # Pod básico
+│   │   └── pod-multi-container.yaml # Pod con múltiples contenedores
+│   ├── 2. Services/             # Servicios básicos
+│   │   ├── service-clusterip.yaml # Servicio ClusterIP
+│   │   └── nginx-service.yaml   # Servicio para nginx
+│   ├── 3. Deployments/          # Deployments básicos
+│   │   ├── deployment-basic.yaml # Deployment básico
+│   │   ├── nginx-deployment.yaml # Deployment de nginx
+│   │   └── dev-deployment.yaml  # Deployment para desarrollo
+│   ├── 4. Services para Deployments/ # Servicios para deployments
+│   │   └── dev-service.yaml     # Servicio para desarrollo
+│   └── 5. ReplicaSets/          # ReplicaSets básicos
+│       └── replicaset-basic.yaml # ReplicaSet básico
+├── intermediate/                 # Ejemplos intermedios
+│   ├── README.md                # Guía de ejemplos intermedios
+│   ├── 1. Ingress/              # Ingress y routing
+│   │   ├── ingress-basic.yaml   # Ingress básico
+│   │   └── ingress.yaml         # Ingress avanzado
+│   ├── 2. ConfigMaps/           # Configuración externalizada
+│   │   ├── configmap.yaml       # ConfigMap básico
+│   │   ├── configmap-env.yaml   # ConfigMap completo
+│   │   └── app-deployment.yaml  # App con ConfigMap
+│   ├── 3. Secrets/              # Gestión de secretos
+│   │   ├── secret.yaml          # Secret básico
+│   │   └── secret-generic.yaml  # Secrets genéricos
+│   ├── 4. Volumes y Storage/    # Persistencia y almacenamiento
+│   │   ├── persistent-volume.yaml # Persistent Volume
+│   │   ├── persistent-volume-claim.yaml # PVC independiente
+│   │   ├── pod-with-storage.yaml # Pod con storage
+│   │   └── volume-pvc.yaml      # PVC con deployment
+│   ├── 5. Aplicaciones Multi-contenedor/ # Apps complejas
+│   │   ├── mysql-deployment.yaml # Base de datos MySQL
+│   │   ├── mysql-service.yaml   # Servicio MySQL
+│   │   ├── webapp-deployment.yaml # Aplicación web
+│   │   ├── webapp-service.yaml  # Servicio web app
+│   │   ├── app1-deployment.yaml # App 1 para Ingress
+│   │   └── app2-deployment.yaml # App 2 para Ingress
+│   └── 6. Múltiples Aplicaciones con Ingress/ # Routing avanzado
+├── advanced/                     # Ejemplos avanzados
+│   ├── README.md                # Guía de ejemplos avanzados
+│   ├── 1. StatefulSets/         # Aplicaciones con estado
+│   │   └── statefulset-database.yaml # StatefulSet PostgreSQL
+│   ├── 2. DaemonSets/           # Servicios de sistema
+│   │   └── daemonset-logging.yaml # DaemonSet Fluentd
+│   ├── 3. Jobs/                 # Tareas por lotes
+│   │   ├── job-parallel.yaml    # Job con paralelismo
+│   │   └── backup-job.yaml      # Job de backup
+│   └── 4. CronJobs/             # Tareas programadas
+│       ├── cronjob-backup.yaml  # CronJob backup avanzado
+│       └── cleanup-cronjob.yaml # CronJob de limpieza
+└── production/                   # Configuraciones de producción
+    ├── README.md                # Guía de configuraciones de producción
+    ├── 1. Alta Disponibilidad/  # HA y resiliencia
+    │   ├── ha-deployment.yaml   # Deployment de alta disponibilidad
+    │   └── app-deployment.yaml  # Deployment para autoscaling
+    ├── 2. Autoscaling/          # Escalado automático
+    │   └── hpa.yaml             # Horizontal Pod Autoscaler
+    ├── 3. Seguridad/            # Políticas de seguridad
+    │   └── security-network-policies.yaml # Políticas de red
+    └── 4. Recursos y Límites/   # Gestión de recursos
+        └── resource-quotas.yaml # Cuotas y límites de recursos
 ```
+
+## 🎯 Categorías de Ejemplos
+
+### 📚 Basic (Conceptos Fundamentales)
+Ejemplos esenciales para entender los building blocks de Kubernetes:
+- **Pods**: Unidad básica de despliegue
+- **Services**: Exposición y descubrimiento de servicios
+- **Deployments**: Gestión declarativa de aplicaciones
+- **ReplicaSets**: Control de réplicas de pods
+
+### 🔧 Intermediate (Configuración y Persistencia)
+Ejemplos para aplicaciones más robustas y configurables:
+- **Ingress**: Routing HTTP/HTTPS y terminación TLS
+- **ConfigMaps**: Configuración externalizada
+- **Secrets**: Gestión segura de credenciales
+- **Volumes**: Persistencia y compartición de datos
+
+### ⚡ Advanced (Workloads Especializados)
+Ejemplos para casos de uso específicos y aplicaciones complejas:
+- **StatefulSets**: Aplicaciones con estado y identidad persistente
+- **DaemonSets**: Servicios de sistema que corren en cada nodo
+- **Jobs**: Tareas de procesamiento por lotes
+- **CronJobs**: Tareas programadas y mantenimiento
+
+### 🏭 Production (Lista para Producción)
+Configuraciones enterprise con alta disponibilidad, seguridad y monitoreo:
+- **Alta Disponibilidad**: Multi-zona, anti-affinity, health checks
+- **Seguridad**: Network policies, RBAC, Pod Security Standards
+- **Monitoreo**: Prometheus, Grafana, alertas
+- **Recursos**: Quotas, limits, autoscaling
 
 ## 🎯 Compatibilidad
 
@@ -29,431 +114,234 @@ Todos los ejemplos en este directorio están diseñados para ser **agnósticos a
 
 ## 🚀 Cómo Usar los Ejemplos
 
-### 1. Navegación Rápida
+### 1. Navegación por Categorías
 ```bash
-# Ver todos los ejemplos disponibles
+# Ver todas las categorías disponibles
 ls -la examples/
 
-# Explorar un ejemplo específico
-cd examples/web-app/
+# Explorar ejemplos básicos
+ls -la examples/basic/
+
+# Ver ejemplos de una categoría específica
+ls -la examples/intermediate/
 ```
 
-### 2. Aplicar un Ejemplo
+### 2. Aplicar Ejemplos por Subcarpetas
 ```bash
-# Aplicar configuración completa de un directorio
-kubectl apply -f examples/web-app/
+# Aplicar todos los pods básicos
+kubectl apply -f examples/basic/"1. Pods/"
 
-# Aplicar ejemplo específico
-kubectl apply -f examples/web-app/deployment.yaml
+# Aplicar configuraciones de Ingress
+kubectl apply -f examples/intermediate/"1. Ingress/"
+
+# Aplicar configuraciones de producción específicas
+kubectl apply -f examples/production/"3. Seguridad/"
 ```
 
-### 3. Personalización
+### 3. Aplicar Categorías Completas
 ```bash
-# Copiar ejemplo para personalizar
-cp -r examples/web-app/ my-custom-app/
-# Editar configuraciones según necesidades
+# Aplicar todos los ejemplos básicos
+find examples/basic/ -name "*.yaml" -exec kubectl apply -f {} \;
+
+# Aplicar ejemplos intermedios
+find examples/intermediate/ -name "*.yaml" -exec kubectl apply -f {} \;
+
+# Aplicar configuraciones de producción
+find examples/production/ -name "*.yaml" -exec kubectl apply -f {} \;
 ```
 
-## 📚 Ejemplos Incluidos
-
-### 🌐 web-app/
-Aplicación web simple con nginx ideal para aprender conceptos básicos.
-- **Recursos**: Deployment, Service, ConfigMap
-- **Casos de uso**: Primer contacto con Kubernetes, demos rápidas
-- **Tiempo de setup**: 2 minutos
-
-### 🏗️ webapp-db/
-Aplicación completa con frontend, backend y base de datos.
-- **Recursos**: Multiple Deployments, Services, PVC, Secrets
-- **Casos de uso**: Aplicaciones reales, pruebas de arquitectura
-- **Tiempo de setup**: 5 minutos
-
-### ⚙️ config-demo/
-Ejemplos de gestión de configuración y secretos.
-- **Recursos**: ConfigMaps, Secrets, Environment Variables
-- **Casos de uso**: Separación de código y configuración
-- **Tiempo de setup**: 3 minutos
-
-### 🌍 ingress-demo/
-Configuraciones de acceso externo y balanceadores de carga.
-- **Recursos**: Ingress, Services, TLS/SSL
-- **Casos de uso**: Exposición de servicios, terminación SSL
-- **Tiempo de setup**: 5 minutos (requiere Ingress Controller)
-
-### 💾 storage/
-Ejemplos de almacenamiento persistente y volúmenes.
-- **Recursos**: PVC, PV, StorageClass, StatefulSets
-- **Casos de uso**: Bases de datos, almacenamiento de archivos
-- **Tiempo de setup**: 5 minutos
-
-### ⏰ jobs/
-Tareas programadas y trabajos batch.
-- **Recursos**: Job, CronJob, Batch workloads
-- **Casos de uso**: Tareas programadas, procesamiento batch
-- **Tiempo de setup**: 3 minutos
-
-### 📈 autoscaling/
-Ejemplos de escalabilidad automática.
-- **Recursos**: HPA, VPA, Metrics Server
-- **Casos de uso**: Aplicaciones con carga variable
-- **Tiempo de setup**: 5 minutos (requiere Metrics Server)
-
-### 🛠️ dev-env/
-Configuraciones optimizadas para desarrollo.
-- **Recursos**: Development-friendly configs, Debug tools
-- **Casos de uso**: Desarrollo local, debugging
-- **Tiempo de setup**: 3 minutos
-
-### 📊 monitoring/
-Ejemplos básicos de monitoreo y observabilidad.
-- **Recursos**: ServiceMonitor, Probes, Basic metrics
-- **Casos de uso**: Monitoreo básico, health checks
-- **Tiempo de setup**: 5 minutos
-
-## Guía de Uso
-
-### 1. Aplicación Web Simple (`web-app/`)
-
-**Archivos:**
-- `nginx-deployment.yaml` - Deployment de nginx con 2 réplicas
-- `nginx-service.yaml` - Service tipo NodePort
-
-**Desplegar:**
+### 4. Progresión de Aprendizaje Recomendada
 ```bash
-kubectl apply -f kubernetes-config/web-app/
+# 1. Empezar con conceptos básicos
+kubectl apply -f examples/basic/"1. Pods/"
+kubectl apply -f examples/basic/"2. Services/"
+kubectl apply -f examples/basic/"3. Deployments/"
+
+# 2. Avanzar a configuraciones intermedias
+kubectl apply -f examples/intermediate/"2. ConfigMaps/"
+kubectl apply -f examples/intermediate/"3. Secrets/"
+kubectl apply -f examples/intermediate/"1. Ingress/"
+
+# 3. Explorar workloads avanzados
+kubectl apply -f examples/advanced/"1. StatefulSets/"
+kubectl apply -f examples/advanced/"3. Jobs/"
+
+# 4. Implementar configuraciones de producción
+kubectl apply -f examples/production/"3. Seguridad/"
+kubectl apply -f examples/production/"1. Alta Disponibilidad/"
 ```
 
-**Acceder:**
+## 📚 Estructura Detallada de Contenidos
+
+### 📚 Basic/ - Fundamentos (9 archivos)
+Conceptos esenciales para empezar con Kubernetes:
+- **1. Pods/**: Pod simple y multi-contenedor
+- **2. Services/**: ClusterIP y servicios para nginx
+- **3. Deployments/**: Deployments básicos y de desarrollo
+- **4. Services para Deployments/**: Conexión de servicios
+- **5. ReplicaSets/**: Control directo de réplicas
+
+### 🔧 Intermediate/ - Configuraciones Robustas (18 archivos)
+Aplicaciones más complejas y configurables:
+- **1. Ingress/**: Routing HTTP básico y avanzado
+- **2. ConfigMaps/**: Configuración externalizada
+- **3. Secrets/**: Gestión segura de credenciales
+- **4. Volumes y Storage/**: Persistencia de datos
+- **5. Aplicaciones Multi-contenedor/**: Stacks completos (MySQL + WebApp)
+- **6. Múltiples Aplicaciones con Ingress/**: Routing complejo
+
+### ⚡ Advanced/ - Workloads Especializados (6 archivos)
+Casos de uso específicos y aplicaciones complejas:
+- **1. StatefulSets/**: PostgreSQL con estado persistente
+- **2. DaemonSets/**: Fluentd para logging distribuido
+- **3. Jobs/**: Procesamiento paralelo y backups
+- **4. CronJobs/**: Tareas programadas y limpieza
+
+### 🏭 Production/ - Enterprise Ready (5 archivos)
+Configuraciones listas para producción:
+- **1. Alta Disponibilidad/**: Deployments resilientes
+- **2. Autoscaling/**: HPA con métricas avanzadas
+- **3. Seguridad/**: Network Policies y micro-segmentación
+- **4. Recursos y Límites/**: ResourceQuotas y governance
+
+## ⭐ Características Destacadas
+
+### 🎯 Progresión Educativa
+- **Aprendizaje gradual**: De conceptos simples a configuraciones enterprise
+- **Ejemplos prácticos**: Casos de uso reales y aplicables
+- **Documentación completa**: README detallado en cada categoría
+
+### 🛡️ Calidad Enterprise
+- **Mejores prácticas**: Health checks, resource limits, security
+- **Configuraciones robustas**: HA, autoscaling, monitoring
+- **Compatibilidad universal**: Funciona en cualquier distribución K8s
+
+### 🚀 Facilidad de Uso
+- **Estructura organizada**: Categorías claras por complejidad
+- **Comandos listos**: Scripts de ejemplo para cada categoría
+- **Personalización sencilla**: Fácil adaptación a necesidades específicas
+
+## 📖 Guías de Referencia Rápida
+
+### 🎯 Para Principiantes
 ```bash
-minikube service nginx-service
+# Empezar con pods simples
+kubectl apply -f examples/basic/"1. Pods/pod-simple.yaml"
+kubectl get pods
+
+# Avanzar a servicios
+kubectl apply -f examples/basic/"2. Services/"
+kubectl get services
+
+# Probar tu primer deployment
+kubectl apply -f examples/basic/"3. Deployments/deployment-basic.yaml"
+kubectl get deployments
 ```
 
-**Características:**
-- ✅ Resource requests/limits configurados
-- ✅ Liveness y readiness probes
-- ✅ Service tipo NodePort en puerto 30080
-
----
-
-### 2. Aplicación con Base de Datos (`webapp-db/`)
-
-**Archivos:**
-- `mysql-deployment.yaml` - MySQL 8.0 con configuración básica
-- `mysql-service.yaml` - Service interno para MySQL
-- `webapp-deployment.yaml` - Aplicación PHP que conecta a MySQL
-- `webapp-service.yaml` - Service + ConfigMap con código PHP
-
-**Desplegar:**
+### 🔧 Para Desarrolladores
 ```bash
-# Primero MySQL
-kubectl apply -f kubernetes-config/webapp-db/mysql-deployment.yaml
-kubectl apply -f kubernetes-config/webapp-db/mysql-service.yaml
+# ConfigMaps para configuración
+kubectl apply -f examples/intermediate/"2. ConfigMaps/"
 
-# Esperar a que MySQL esté listo
-kubectl wait --for=condition=ready pod -l app=mysql --timeout=300s
+# Secrets para credenciales
+kubectl apply -f examples/intermediate/"3. Secrets/"
 
-# Luego la aplicación web
-kubectl apply -f kubernetes-config/webapp-db/webapp-deployment.yaml
-kubectl apply -f kubernetes-config/webapp-db/webapp-service.yaml
+# Stack completo con BD
+kubectl apply -f examples/intermediate/"5. Aplicaciones Multi-contenedor/"
 ```
 
-**Características:**
-- ✅ Comunicación entre servicios
-- ✅ Variables de entorno para configuración
-- ✅ Código PHP que demuestra conexión a BD
-- ✅ Contador de visitas en base de datos
-
----
-
-### 3. ConfigMaps y Secrets (`config-demo/`)
-
-**Archivos:**
-- `configmap.yaml` - Configuración de aplicación y archivos
-- `secret.yaml` - Información sensible codificada
-- `app-deployment.yaml` - App que usa ConfigMaps y Secrets
-
-**Desplegar:**
+### ⚡ Para DevOps
 ```bash
-kubectl apply -f kubernetes-config/config-demo/
+# StatefulSets para bases de datos
+kubectl apply -f examples/advanced/"1. StatefulSets/"
+
+# Jobs para tareas batch
+kubectl apply -f examples/advanced/"3. Jobs/"
+
+# Configuraciones de producción
+kubectl apply -f examples/production/
 ```
 
-**Características:**
-- ✅ Variables de entorno desde ConfigMap
-- ✅ Variables de entorno desde Secret
-- ✅ Archivos montados desde ConfigMap
-- ✅ Página web que muestra la configuración
+## 🛠️ Comandos Útiles
 
----
-
-### 4. Ingress Controller (`ingress-demo/`)
-
-**Prerrequisitos:**
+### 📊 Monitoreo
 ```bash
-minikube addons enable ingress
-```
+# Ver todos los recursos por categoría
+kubectl get all -n default
 
-**Archivos:**
-- `app1-deployment.yaml` - Primera aplicación con contenido personalizado
-- `app2-deployment.yaml` - Segunda aplicación con API simulada
-- `ingress.yaml` - Configuración de Ingress
+# Ver estado de workloads específicos
+kubectl get pods,services,deployments
+kubectl get statefulsets,daemonsets,jobs,cronjobs
+kubectl get pv,pvc,configmaps,secrets
 
-**Desplegar:**
-```bash
-kubectl apply -f kubernetes-config/ingress-demo/
-
-# Configurar hosts locales
-echo "$(minikube ip) app1.local app2.local apps.local" | sudo tee -a /etc/hosts
-```
-
-**Acceder:**
-```bash
-curl http://app1.local
-curl http://app2.local
-curl http://apps.local/app1
-curl http://apps.local/app2
-```
-
-**Características:**
-- ✅ Enrutamiento basado en host
-- ✅ Enrutamiento basado en path
-- ✅ Múltiples aplicaciones en un solo Ingress
-
----
-
-### 5. Almacenamiento Persistente (`storage/`)
-
-**Archivos:**
-- `persistent-volume.yaml` - PersistentVolume local
-- `persistent-volume-claim.yaml` - PersistentVolumeClaim
-- `pod-with-storage.yaml` - Pod y Deployment que usan el volumen
-
-**Desplegar:**
-```bash
-kubectl apply -f kubernetes-config/storage/
-```
-
-**Probar persistencia:**
-```bash
-# Escribir datos
-kubectl exec -it storage-pod -- echo "Datos persistentes" > /data/test.txt
-
-# Eliminar y recrear pod
-kubectl delete pod storage-pod
-kubectl apply -f kubernetes-config/storage/pod-with-storage.yaml
-
-# Verificar que los datos persisten
-kubectl exec -it storage-pod -- cat /data/test.txt
-```
-
-**Características:**
-- ✅ PersistentVolume con hostPath
-- ✅ PersistentVolumeClaim
-- ✅ Datos que sobreviven reinicios de pods
-
----
-
-### 6. Jobs y CronJobs (`jobs/`)
-
-**Archivos:**
-- `backup-job.yaml` - Job simple y job paralelo
-- `cleanup-cronjob.yaml` - CronJobs programados
-
-**Desplegar:**
-```bash
-# Job único
-kubectl apply -f kubernetes-config/jobs/backup-job.yaml
-
-# CronJobs programados
-kubectl apply -f kubernetes-config/jobs/cleanup-cronjob.yaml
-```
-
-**Monitorear:**
-```bash
-kubectl get jobs
-kubectl get cronjobs
-kubectl logs job/backup-job
-```
-
-**Características:**
-- ✅ Job simple con simulación de backup
-- ✅ Job paralelo con múltiples workers
-- ✅ CronJob para limpieza programada
-- ✅ Configuración de retry y timeouts
-
----
-
-### 7. Autoescalado (`autoscaling/`)
-
-**Prerrequisitos:**
-```bash
-minikube addons enable metrics-server
-```
-
-**Archivos:**
-- `app-deployment.yaml` - Aplicación con resource requests definidos
-- `hpa.yaml` - Horizontal Pod Autoscaler
-
-**Desplegar:**
-```bash
-kubectl apply -f kubernetes-config/autoscaling/
-```
-
-**Generar carga:**
-```bash
-# Crear pod generador de carga
-kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- /bin/sh
-
-# Dentro del pod:
-while true; do wget -q -O- http://autoscale-demo-service/; done
-```
-
-**Monitorear:**
-```bash
-kubectl get hpa -w
-kubectl get pods -l app=autoscale-demo -w
-kubectl top pods
-```
-
-**Características:**
-- ✅ HPA basado en CPU
-- ✅ HPA basado en memoria
-- ✅ Configuraciones de comportamiento de escalado
-- ✅ Interfaz web para demostración
-
----
-
-### 8. Entorno de Desarrollo (`dev-env/`)
-
-**Archivos:**
-- `dev-deployment.yaml` - Deployment con código Node.js
-- `dev-service.yaml` - Service + scripts de desarrollo
-
-**Desplegar:**
-```bash
-kubectl apply -f kubernetes-config/dev-env/
-```
-
-**Desarrollo con hot-reload:**
-```bash
-# Configurar Docker env
-eval $(minikube docker-env)
-
-# Construir imagen de desarrollo
-docker build -t dev-app:latest .
-
-# Port forwarding para desarrollo
-kubectl port-forward service/dev-service 8080:3000
-```
-
-**Características:**
-- ✅ Configuración para desarrollo local
-- ✅ Scripts para hot-reload
-- ✅ Servidor Node.js con API REST
-- ✅ Variables de entorno para desarrollo
-
----
-
-### 9. CI/CD (`ci-cd/`)
-
-**Archivos:**
-- `deployment-template.yaml` - Template con variables de entorno
-- `test-deployment.yaml` - Deployment de testing + tests de integración
-- `prod-deployment.yaml` - Deployment de producción con seguridad
-
-**Usar con el script de CI/CD:**
-```bash
-# Hacer ejecutable el script
-chmod +x ci-cd-pipeline.sh
-
-# Ejecutar pipeline completo
-./ci-cd-pipeline.sh
-
-# Solo construcción
-./ci-cd-pipeline.sh build
-
-# Solo tests
-./ci-cd-pipeline.sh test
-```
-
-**Características:**
-- ✅ Pipeline automatizado
-- ✅ Tests de integración
-- ✅ Despliegue por entornos
-- ✅ Configuraciones de seguridad para producción
-
----
-
-## Comandos Útiles
-
-### Limpieza General
-```bash
-# Eliminar todos los recursos de los ejemplos
-kubectl delete deployments,services,ingress,jobs,cronjobs,hpa,pv,pvc --all
-
-# Limpiar pods completados/fallidos
-kubectl delete pods --field-selector=status.phase=Succeeded
-kubectl delete pods --field-selector=status.phase=Failed
-```
-
-### Monitoreo
-```bash
-# Ver todos los recursos
-kubectl get all
-
-# Ver eventos del cluster
+# Monitoreo en tiempo real
+kubectl get pods --watch
 kubectl get events --sort-by=.metadata.creationTimestamp
-
-# Ver uso de recursos
-kubectl top nodes
-kubectl top pods
-
-# Logs en tiempo real
-kubectl logs -f deployment/<nombre-deployment>
 ```
 
-### Debug
+### 🧹 Limpieza
 ```bash
-# Describir recursos para ver eventos
+# Limpiar ejemplos por categoría
+find examples/basic/ -name "*.yaml" -exec kubectl delete -f {} \;
+find examples/intermediate/ -name "*.yaml" -exec kubectl delete -f {} \;
+find examples/advanced/ -name "*.yaml" -exec kubectl delete -f {} \;
+find examples/production/ -name "*.yaml" -exec kubectl delete -f {} \;
+
+# Limpieza completa
+kubectl delete all --all
+kubectl delete pvc --all
+kubectl delete configmaps --all
+kubectl delete secrets --all
+```
+
+### 🔍 Debug y Troubleshooting
+```bash
+# Diagnosticar pods
 kubectl describe pod <pod-name>
-kubectl describe deployment <deployment-name>
+kubectl logs <pod-name>
+kubectl logs -f deployment/<deployment-name>
 
-# Shell interactivo en pod
-kubectl exec -it <pod-name> -- /bin/sh
+# Acceso interactivo
+kubectl exec -it <pod-name> -- /bin/bash
 
-# Port forwarding para acceso local
-kubectl port-forward pod/<pod-name> 8080:80
+# Port forwarding para testing local
+kubectl port-forward service/<service-name> 8080:80
 ```
 
-## Requisitos de Sistema
+## 📋 Requisitos del Sistema
 
-**Minikube mínimo:**
-- CPU: 2 cores
-- Memoria: 4GB
-- Disco: 20GB
+### ✅ Clusters Compatibles
+- **Minikube**: v1.24+ (desarrollo local)
+- **Kind**: v1.24+ (testing con contenedores)
+- **k3s**: v1.24+ (edge computing)
+- **kubeadm**: v1.24+ (clusters personalizados)
+- **EKS/GKE/AKS**: v1.24+ (clouds públicas)
 
-**Para todos los ejemplos:**
+### 💾 Recursos Recomendados
 ```bash
+# Configuración mínima para desarrollo
+minikube start --cpus=2 --memory=4096 --disk-size=20gb
+
+# Configuración recomendada para todos los ejemplos
 minikube start --cpus=4 --memory=8192 --disk-size=50gb
-```
 
-**Addons recomendados:**
-```bash
-minikube addons enable dashboard
+# Addons útiles para Minikube
 minikube addons enable ingress
 minikube addons enable metrics-server
+minikube addons enable dashboard
 minikube addons enable registry
 ```
 
-## Solución de Problemas
+## 🚨 Solución de Problemas Comunes
 
 ### ImagePullBackOff
 ```bash
-# Verificar que la imagen existe en Minikube
+# Verificar que la imagen existe
+kubectl describe pod <pod-name>
+
+# Para Minikube, usar registro local
 eval $(minikube docker-env)
 docker images
-
-# Reconstruir imagen si es necesaria
-docker build -t <image-name> .
 ```
 
 ### Pods en estado Pending
@@ -471,11 +359,12 @@ kubectl describe pod <pod-name>
 # Verificar endpoints
 kubectl get endpoints <service-name>
 
-# Verificar labels
+# Verificar selectors y labels
 kubectl get pods --show-labels
+kubectl describe service <service-name>
 ```
 
-### HPA no funciona
+### HPA no escala
 ```bash
 # Verificar metrics-server
 kubectl get pods -n kube-system | grep metrics-server
@@ -485,20 +374,19 @@ kubectl top pods
 kubectl describe hpa <hpa-name>
 ```
 
-## Contribuir
+## 🤝 Contribuir
 
-Para añadir nuevos ejemplos:
+¿Quieres añadir nuevos ejemplos? Sigue estas pautas:
 
-1. Crear directorio en `kubernetes-config/`
-2. Incluir manifiestos YAML válidos
-3. Añadir resource requests/limits
-4. Incluir probes de salud
-5. Documentar en este README
-6. Probar en Minikube limpio
+1. **Estructura**: Crear subcarpeta apropiada en la categoría correcta
+2. **Calidad**: Incluir resource requests/limits y health checks
+3. **Documentación**: Actualizar README correspondiente
+4. **Testing**: Probar en cluster limpio
+5. **Mejores prácticas**: Seguir estándares de seguridad y performance
 
-## Referencias
+## 📚 Referencias
 
-- [Documentación de Kubernetes](https://kubernetes.io/docs/)
+- [Documentación Oficial de Kubernetes](https://kubernetes.io/docs/)
 - [Guías de Minikube](https://minikube.sigs.k8s.io/docs/)
-- [Ejemplos oficiales de Kubernetes](https://github.com/kubernetes/examples)
-- [Mejores prácticas](https://kubernetes.io/docs/concepts/configuration/overview/)
+- [Ejemplos Oficiales de Kubernetes](https://github.com/kubernetes/examples)
+- [Mejores Prácticas de Kubernetes](https://kubernetes.io/docs/concepts/configuration/overview/)

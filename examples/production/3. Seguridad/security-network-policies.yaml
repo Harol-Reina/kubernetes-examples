@@ -1,0 +1,106 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-app-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: web-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Permitir tráfico desde ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+  # Permitir tráfico desde pods con label específico
+  - from:
+    - podSelector:
+        matchLabels:
+          access: web-app
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  # Permitir DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Permitir conexión a base de datos
+  - to:
+    - podSelector:
+        matchLabels:
+          app: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Permitir conexión a APIs externas (HTTPS)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Solo permitir tráfico desde web-app
+  - from:
+    - podSelector:
+        matchLabels:
+          app: web-app
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Permitir tráfico entre réplicas de la base de datos
+  - from:
+    - podSelector:
+        matchLabels:
+          app: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress:
+  # Permitir DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Permitir comunicación entre réplicas
+  - to:
+    - podSelector:
+        matchLabels:
+          app: database
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-default
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress

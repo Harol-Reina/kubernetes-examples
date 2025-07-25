@@ -1,0 +1,95 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: database-backup
+  labels:
+    app: backup
+spec:
+  # Ejecutar todos los días a las 2:00 AM
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: postgres:14
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - |
+              echo "Starting database backup at $(date)"
+              
+              # Variables de conexión
+              export PGPASSWORD="$POSTGRES_PASSWORD"
+              BACKUP_FILE="/backups/backup-$(date +%Y%m%d-%H%M%S).sql"
+              
+              # Crear directorio de backup
+              mkdir -p /backups
+              
+              # Realizar backup
+              pg_dump -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" > "$BACKUP_FILE"
+              
+              if [ $? -eq 0 ]; then
+                echo "Backup completed successfully: $BACKUP_FILE"
+                
+                # Comprimir backup
+                gzip "$BACKUP_FILE"
+                echo "Backup compressed: ${BACKUP_FILE}.gz"
+                
+                # Limpiar backups antiguos (más de 7 días)
+                find /backups -name "*.sql.gz" -mtime +7 -delete
+                echo "Old backups cleaned up"
+                
+                # Mostrar espacio usado
+                echo "Backup space usage:"
+                du -sh /backups
+              else
+                echo "Backup failed!"
+                exit 1
+              fi
+            env:
+            - name: POSTGRES_HOST
+              value: "postgresql-headless"
+            - name: POSTGRES_DB
+              value: "myapp"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: password
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-pvc
+  # Mantener los últimos 3 jobs exitosos y 1 fallido
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: default

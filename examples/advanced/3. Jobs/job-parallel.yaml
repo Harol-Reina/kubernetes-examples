@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-processing-job
+  labels:
+    app: data-processing
+spec:
+  parallelism: 3
+  completions: 6
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: data-processing
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: processor
+        image: busybox:1.35
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "Starting data processing job at $(date)"
+          echo "Processing batch: $JOB_COMPLETION_INDEX"
+          
+          # Simular procesamiento de datos
+          for i in $(seq 1 10); do
+            echo "Processing item $i/10"
+            sleep 1
+          done
+          
+          # Simular éxito/fallo aleatorio para demostrar reintentos
+          if [ $((RANDOM % 10)) -lt 8 ]; then
+            echo "Job completed successfully at $(date)"
+            exit 0
+          else
+            echo "Job failed at $(date)"
+            exit 1
+          fi
+        env:
+        - name: JOB_COMPLETION_INDEX
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
