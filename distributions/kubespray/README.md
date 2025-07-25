@@ -39,7 +39,20 @@ groups usuario
 ```
 📚 **Guía completa**: [Configuración de sudo en Debian](https://harol-reina.github.io/blog/post-3/)
 
-#### 🔑 Configurar Claves SSH
+#### � Configurar Repositorios de Debian
+Después de configurar sudo, es importante configurar los repositorios para tener acceso completo a los paquetes:
+```bash
+# Eliminar el repositorio CD-ROM del sistema
+sudo sed -i '/cdrom:/s/^/#/' /etc/apt/sources.list
+
+# Habilitar las secciones non-free y contrib automáticamente
+sudo apt-add-repository "deb http://deb.debian.org/debian/ $(lsb_release -sc) main contrib non-free non-free-firmware"
+
+# Actualizar los repositorios
+sudo apt update
+```
+
+#### �🔑 Configurar Claves SSH
 Para conectarse a los nodos sin contraseña, necesitas configurar claves SSH:
 ```bash
 # Generar clave SSH (si no tienes una)
@@ -89,6 +102,7 @@ docker --version
 ### ✅ Verificación de Prerrequisitos
 Antes de continuar, asegúrate de tener:
 - [ ] `sudo` configurado en el servidor de control
+- [ ] Repositorios de Debian configurados (non-free y contrib habilitados)
 - [ ] Docker instalado en el servidor de control
 - [ ] Claves SSH configuradas para acceso sin contraseña a todos los nodos
 - [ ] Conectividad de red entre el servidor de control y los nodos objetivo
