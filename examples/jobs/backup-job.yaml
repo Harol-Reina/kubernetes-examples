@@ -1,0 +1,112 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backup-job
+  labels:
+    app: backup
+spec:
+  template:
+    metadata:
+      labels:
+        app: backup
+    spec:
+      containers:
+      - name: backup-container
+        image: busybox
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "🗄️  Iniciando proceso de backup..."
+          echo "Fecha: $(date)"
+          echo "Hostname: $(hostname)"
+          
+          # Simular backup de base de datos
+          echo "📊 Realizando backup de base de datos..."
+          for i in $(seq 1 10); do
+            echo "Procesando tabla $i/10..."
+            sleep 2
+          done
+          
+          # Simular compresión
+          echo "🗜️  Comprimiendo archivos..."
+          sleep 5
+          
+          # Simular subida a almacenamiento
+          echo "☁️  Subiendo a almacenamiento remoto..."
+          sleep 3
+          
+          # Crear archivo de prueba
+          echo "Backup completado en $(date)" > /backup/backup-$(date +%Y%m%d-%H%M%S).txt
+          echo "📁 Archivos generados:"
+          ls -la /backup/
+          
+          echo "✅ Backup completado exitosamente!"
+        
+        volumeMounts:
+        - name: backup-storage
+          mountPath: /backup
+        
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+            
+      volumes:
+      - name: backup-storage
+        emptyDir: {}
+        
+      restartPolicy: Never
+  
+  # Configuración del job
+  backoffLimit: 3  # Reintentos máximos
+  activeDeadlineSeconds: 600  # Timeout en segundos
+
+---
+# Job paralelo para mostrar diferentes configuraciones
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: parallel-processing-job
+  labels:
+    app: parallel-processing
+spec:
+  parallelism: 3      # Ejecutar 3 pods en paralelo
+  completions: 6      # Completar 6 tareas en total
+  template:
+    metadata:
+      labels:
+        app: parallel-processing
+    spec:
+      containers:
+      - name: worker
+        image: busybox
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          WORKER_ID=$(hostname | grep -o '[0-9]*$')
+          echo "🚀 Worker $WORKER_ID iniciado en $(date)"
+          
+          # Simular procesamiento de datos
+          echo "📈 Procesando datos en worker $WORKER_ID..."
+          PROCESS_TIME=$((10 + RANDOM % 20))
+          sleep $PROCESS_TIME
+          
+          echo "📊 Worker $WORKER_ID: Datos procesados en ${PROCESS_TIME}s"
+          echo "✅ Worker $WORKER_ID completado en $(date)"
+        
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "100m"
+          limits:
+            memory: "64Mi"
+            cpu: "250m"
+            
+      restartPolicy: Never
+  
+  backoffLimit: 2

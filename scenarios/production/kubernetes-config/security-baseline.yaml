@@ -1,0 +1,196 @@
+# Production Security Configurations
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    name: production
+    environment: production
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production-db
+  labels:
+    name: production-db
+    environment: production
+    data-classification: sensitive
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production-cache
+  labels:
+    name: production-cache
+    environment: production
+    data-classification: temporary
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+# Production Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: production-app
+  namespace: production
+automountServiceAccountToken: false
+---
+# RBAC for production applications
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: production
+  name: production-app-role
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: production-app-binding
+  namespace: production
+subjects:
+- kind: ServiceAccount
+  name: production-app
+  namespace: production
+roleRef:
+  kind: Role
+  name: production-app-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Security Context Constraints
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: production-security-policy
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: require-non-root
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - production
+          - production-db
+          - production-cache
+    validate:
+      message: "Containers must run as non-root user"
+      pattern:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+  - name: require-readonly-rootfs
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - production
+          - production-db
+          - production-cache
+    validate:
+      message: "Root filesystem must be read-only"
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              readOnlyRootFilesystem: true
+  - name: drop-all-capabilities
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - production
+          - production-db
+          - production-cache
+    validate:
+      message: "Containers must drop all capabilities"
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              capabilities:
+                drop:
+                - ALL
+  - name: disallow-privilege-escalation
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - production
+          - production-db
+          - production-cache
+    validate:
+      message: "Privilege escalation must be disabled"
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              allowPrivilegeEscalation: false
+---
+# Resource Quotas
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: production-quota
+  namespace: production
+spec:
+  hard:
+    requests.cpu: "50"
+    requests.memory: 100Gi
+    limits.cpu: "100"
+    limits.memory: 200Gi
+    persistentvolumeclaims: "50"
+    services: "30"
+    secrets: "50"
+    configmaps: "50"
+    pods: "100"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: production-limits
+  namespace: production
+spec:
+  limits:
+  - default:
+      cpu: "2"
+      memory: "4Gi"
+    defaultRequest:
+      cpu: "500m"
+      memory: "1Gi"
+    max:
+      cpu: "8"
+      memory: "16Gi"
+    min:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container
+  - default:
+      storage: "10Gi"
+    max:
+      storage: "100Gi"
+    min:
+      storage: "1Gi"
+    type: PersistentVolumeClaim

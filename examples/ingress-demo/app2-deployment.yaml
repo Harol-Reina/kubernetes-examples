@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2-deployment
+  labels:
+    app: app2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app2
+  template:
+    metadata:
+      labels:
+        app: app2
+    spec:
+      containers:
+      - name: app2
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: app2-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      volumes:
+      - name: app2-content
+        configMap:
+          name: app2-content
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app2-content
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>App 2 - Ingress Demo</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                color: white;
+                text-align: center;
+                padding: 50px;
+                margin: 0;
+            }
+            .container {
+                background: rgba(255,255,255,0.1);
+                padding: 40px;
+                border-radius: 10px;
+                backdrop-filter: blur(10px);
+            }
+            .api-demo {
+                background: rgba(0,0,0,0.2);
+                padding: 20px;
+                border-radius: 5px;
+                margin: 20px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>⚡ Aplicación 2</h1>
+            <p>Esta es la <strong>Aplicación 2</strong> accesible a través de Ingress</p>
+            <p>URL: <strong>app2.local</strong></p>
+            <p>Pod: <span id="hostname"></span></p>
+            <p>Timestamp: <span id="time"></span></p>
+            
+            <div class="api-demo">
+                <h3>🔌 API Demo</h3>
+                <p>Esta aplicación simula tener una API REST</p>
+                <p>Endpoints disponibles:</p>
+                <ul style="text-align: left; display: inline-block;">
+                    <li><code>GET /api/users</code></li>
+                    <li><code>GET /api/health</code></li>
+                    <li><code>POST /api/data</code></li>
+                </ul>
+            </div>
+            
+            <hr style="margin: 30px 0;">
+            
+            <h3>Navegación</h3>
+            <p><a href="http://app1.local" style="color: #ffeb3b;">← Volver a Aplicación 1</a></p>
+        </div>
+        
+        <script>
+            document.getElementById('hostname').textContent = window.location.hostname;
+            document.getElementById('time').textContent = new Date().toLocaleString();
+        </script>
+    </body>
+    </html>
+
+  health.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Health Check - App 2</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+            .healthy { color: green; }
+        </style>
+    </head>
+    <body>
+        <h1 class="healthy">✅ Aplicación 2 - Saludable</h1>
+        <p>Estado: <strong>OK</strong></p>
+        <p>Tiempo de respuesta: <span id="response-time"></span>ms</p>
+        <p>Memoria libre: 85%</p>
+        <p>Última verificación: <span id="check-time"></span></p>
+        
+        <script>
+            document.getElementById('response-time').textContent = Math.floor(Math.random() * 50) + 10;
+            document.getElementById('check-time').textContent = new Date().toLocaleString();
+        </script>
+    </body>
+    </html>
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-service
+  labels:
+    app: app2
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: app2

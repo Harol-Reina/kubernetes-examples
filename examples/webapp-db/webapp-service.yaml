@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+  labels:
+    app: webapp
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30081
+    protocol: TCP
+  selector:
+    app: webapp
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-content
+data:
+  index.php: |
+    <?php
+    $host = $_ENV['DB_HOST'] ?? 'localhost';
+    $port = $_ENV['DB_PORT'] ?? '3306';
+    $dbname = $_ENV['DB_NAME'] ?? 'myapp';
+    $username = $_ENV['DB_USER'] ?? 'root';
+    $password = $_ENV['DB_PASSWORD'] ?? '';
+
+    echo "<h1>Web App con Base de Datos</h1>";
+    echo "<p>Host de BD: $host:$port</p>";
+    echo "<p>Base de datos: $dbname</p>";
+    echo "<p>Usuario: $username</p>";
+
+    try {
+        $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname", $username, $password);
+        echo "<p style='color: green;'>✅ Conexión a la base de datos exitosa!</p>";
+        
+        // Crear tabla de ejemplo si no existe
+        $pdo->exec("CREATE TABLE IF NOT EXISTS visits (id INT AUTO_INCREMENT PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)");
+        
+        // Insertar visita
+        $pdo->exec("INSERT INTO visits (timestamp) VALUES (NOW())");
+        
+        // Contar visitas
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM visits");
+        $result = $stmt->fetch();
+        echo "<p>Número de visitas: " . $result['count'] . "</p>";
+        
+    } catch(PDOException $e) {
+        echo "<p style='color: red;'>❌ Error de conexión: " . $e->getMessage() . "</p>";
+    }
+
+    echo "<hr>";
+    echo "<p>Información del servidor:</p>";
+    echo "<ul>";
+    echo "<li>PHP Version: " . phpversion() . "</li>";
+    echo "<li>Server Time: " . date('Y-m-d H:i:s') . "</li>";
+    echo "<li>Server Name: " . gethostname() . "</li>";
+    echo "</ul>";
+    ?>

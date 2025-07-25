@@ -1,0 +1,148 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscale-demo
+  labels:
+    app: autoscale-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: autoscale-demo
+  template:
+    metadata:
+      labels:
+        app: autoscale-demo
+    spec:
+      containers:
+      - name: autoscale-app
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        
+        # IMPORTANTE: Definir resource requests para que HPA funcione
+        resources:
+          requests:
+            cpu: "250m"      # 250 millicores
+            memory: "128Mi"
+          limits:
+            cpu: "500m"      # 500 millicores
+            memory: "256Mi"
+        
+        volumeMounts:
+        - name: app-content
+          mountPath: /usr/share/nginx/html
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          
+      volumes:
+      - name: app-content
+        configMap:
+          name: autoscale-content
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autoscale-content
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Autoscaling Demo</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+                color: white;
+                text-align: center;
+                padding: 20px;
+                margin: 0;
+            }
+            .container {
+                background: rgba(255,255,255,0.1);
+                padding: 30px;
+                border-radius: 10px;
+                backdrop-filter: blur(10px);
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            .metrics {
+                background: rgba(0,0,0,0.2);
+                padding: 20px;
+                border-radius: 5px;
+                margin: 20px 0;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Demostración de Autoescalado</h1>
+            <p>Esta aplicación demuestra el Horizontal Pod Autoscaler (HPA) de Kubernetes</p>
+            
+            <div class="metrics">
+                <h3>📊 Información del Sistema</h3>
+                <p><strong>Propósito:</strong> Demostrar HPA en acción</p>
+                <p><strong>Recursos:</strong> CPU: 250m request, 500m limit</p>
+                <p><strong>Escalado:</strong> Basado en uso de CPU (50% threshold)</p>
+            </div>
+
+            <h3>📈 Comandos para Monitoreo</h3>
+            <div class="metrics">
+                <p>Para observar el autoescalado en tiempo real:</p>
+                <pre>kubectl get hpa autoscale-demo-hpa -w</pre>
+                <pre>kubectl get pods -l app=autoscale-demo -w</pre>
+                <pre>kubectl top pods -l app=autoscale-demo</pre>
+            </div>
+
+            <h3>🎯 Casos de Uso</h3>
+            <div class="metrics">
+                <ul>
+                    <li>E-commerce durante ventas especiales</li>
+                    <li>APIs con picos de tráfico variables</li>
+                    <li>Procesamiento de datos por lotes</li>
+                    <li>Microservicios con carga fluctuante</li>
+                </ul>
+            </div>
+
+            <h3>⚡ Generar Carga</h3>
+            <div class="metrics">
+                <p>Para probar el autoescalado, ejecuta en otra terminal:</p>
+                <pre>kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- /bin/sh</pre>
+                <p>Dentro del pod generador:</p>
+                <pre>while true; do wget -q -O- http://autoscale-demo-service/; done</pre>
+            </div>
+        </div>
+    </body>
+    </html>
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: autoscale-demo-service
+  labels:
+    app: autoscale-demo
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30084
+    protocol: TCP
+  selector:
+    app: autoscale-demo

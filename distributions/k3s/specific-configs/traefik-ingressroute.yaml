@@ -1,0 +1,54 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: api-ingressroute
+  namespace: default
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+  - match: Host(`api.example.com`)
+    kind: Rule
+    services:
+    - name: api-service
+      port: 80
+    middlewares:
+    - name: rate-limit
+    - name: compress
+  - match: Host(`api.example.com`) && PathPrefix(`/admin`)
+    kind: Rule
+    services:
+    - name: api-service
+      port: 80
+    middlewares:
+    - name: auth-middleware
+  tls:
+    certResolver: letsencrypt
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: auth-middleware
+  namespace: default
+spec:
+  basicAuth:
+    secret: auth-secret
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit
+  namespace: default
+spec:
+  rateLimit:
+    burst: 100
+    average: 50
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: compress
+  namespace: default
+spec:
+  compress: {}

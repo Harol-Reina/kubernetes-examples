@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-service
+  labels:
+    app: dev-app
+    environment: development
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+    nodePort: 30085
+    protocol: TCP
+  selector:
+    app: dev-app
+
+---
+# Service para desarrollo con LoadBalancer (si se soporta)
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-service-lb
+  labels:
+    app: dev-app
+    environment: development
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: dev-app
+
+---
+# ConfigMap con scripts de desarrollo
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dev-scripts
+data:
+  start-dev.sh: |
+    #!/bin/bash
+    echo "🚀 Iniciando entorno de desarrollo..."
+    
+    # Configurar Docker env para Minikube
+    eval $(minikube docker-env)
+    
+    # Construir imagen de desarrollo
+    echo "🏗️  Construyendo imagen de desarrollo..."
+    docker build -t dev-app:latest .
+    
+    # Aplicar configuraciones
+    echo "📦 Aplicando configuraciones..."
+    kubectl apply -f kubernetes-config/dev-env/
+    
+    # Esperar a que esté listo
+    echo "⏳ Esperando a que el pod esté listo..."
+    kubectl wait --for=condition=ready pod -l app=dev-app --timeout=300s
+    
+    # Mostrar información
+    echo "✅ Entorno de desarrollo listo!"
+    echo "🌐 Servicio disponible en:"
+    minikube service dev-service --url
+    
+    echo "📝 Para ver logs en tiempo real:"
+    echo "kubectl logs -f deployment/dev-deployment"
+    
+    echo "🔄 Para reiniciar después de cambios:"
+    echo "kubectl rollout restart deployment/dev-deployment"
+
+  hot-reload.sh: |
+    #!/bin/bash
+    echo "🔄 Configurando hot-reload para desarrollo..."
+    
+    # Función para detectar cambios y rebuildar
+    watch_and_rebuild() {
+        echo "👀 Observando cambios en archivos..."
+        inotifywait -m -r -e modify,create,delete --format '%w%f' . | while read file
+        do
+            if [[ $file == *.js || $file == *.json ]]; then
+                echo "📝 Cambio detectado en $file"
+                echo "🏗️  Reconstruyendo imagen..."
+                eval $(minikube docker-env)
+                docker build -t dev-app:latest .
+                
+                echo "🔄 Reiniciando deployment..."
+                kubectl rollout restart deployment/dev-deployment
+                
+                echo "⏳ Esperando rollout..."
+                kubectl rollout status deployment/dev-deployment
+                echo "✅ Actualización completada!"
+            fi
+        done
+    }
+    
+    # Verificar si inotifywait está disponible
+    if command -v inotifywait &> /dev/null; then
+        watch_and_rebuild
+    else
+        echo "❌ inotifywait no está instalado"
+        echo "💡 Instalar con: sudo apt-get install inotify-tools"
+        echo "🔄 Modo manual: ejecuta './hot-reload.sh' después de hacer cambios"
+    fi
+
+  debug.sh: |
+    #!/bin/bash
+    echo "🐛 Herramientas de debug para desarrollo..."
+    
+    POD_NAME=$(kubectl get pods -l app=dev-app -o jsonpath='{.items[0].metadata.name}')
+    
+    echo "📋 Información del pod:"
+    kubectl describe pod $POD_NAME
+    
+    echo "📊 Estado de recursos:"
+    kubectl top pod $POD_NAME
+    
+    echo "📝 Logs recientes:"
+    kubectl logs $POD_NAME --tail=50
+    
+    echo "🔍 Variables de entorno:"
+    kubectl exec $POD_NAME -- env | grep -E "NODE_|PORT|DEBUG"
+    
+    echo "🌐 Port forwarding (puerto 8080 local -> 3000 pod):"
+    echo "kubectl port-forward $POD_NAME 8080:3000"
+    
+    echo "💻 Para shell interactivo:"
+    echo "kubectl exec -it $POD_NAME -- /bin/sh"
+
+  cleanup-dev.sh: |
+    #!/bin/bash
+    echo "🧹 Limpiando entorno de desarrollo..."
+    
+    # Eliminar recursos de desarrollo
+    kubectl delete -f kubernetes-config/dev-env/ --ignore-not-found=true
+    
+    # Limpiar imágenes Docker
+    eval $(minikube docker-env)
+    docker rmi dev-app:latest --force 2>/dev/null || true
+    
+    # Limpiar recursos órfanos
+    kubectl delete pods --field-selector=status.phase=Succeeded
+    kubectl delete pods --field-selector=status.phase=Failed
+    
+    echo "✅ Limpieza completada!"
+
+---
+# Ingress para desarrollo (opcional)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dev-ingress
+  labels:
+    app: dev-app
+    environment: development
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: dev.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dev-service
+            port:
+              number: 3000

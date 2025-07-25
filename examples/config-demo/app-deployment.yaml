@@ -1,0 +1,177 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-demo-app
+  labels:
+    app: config-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: config-demo
+  template:
+    metadata:
+      labels:
+        app: config-demo
+    spec:
+      containers:
+      - name: app
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        
+        # Configuración usando variables de entorno desde ConfigMap
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: database_url
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: log_level
+        - name: MAX_CONNECTIONS
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: max_connections
+        
+        # Configuración usando variables de entorno desde Secret
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: api_key
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: database_password
+        - name: ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: admin_email
+
+        # Montar archivos de configuración desde ConfigMap
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+        - name: app-html
+          mountPath: /usr/share/nginx/html
+
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+
+      volumes:
+      # Volumen desde ConfigMap
+      - name: config-volume
+        configMap:
+          name: app-config
+          items:
+          - key: app.properties
+            path: app.properties
+      
+      # Configuración específica de nginx
+      - name: nginx-config
+        configMap:
+          name: app-config
+          items:
+          - key: nginx.conf
+            path: default.conf
+      
+      # Contenido HTML personalizado
+      - name: app-html
+        configMap:
+          name: demo-html
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Config Demo App</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .config { background: #f4f4f4; padding: 20px; margin: 20px 0; }
+            .secret { background: #fff3cd; padding: 20px; margin: 20px 0; border-left: 5px solid #ffc107; }
+            .env-var { margin: 10px 0; }
+        </style>
+    </head>
+    <body>
+        <h1>🔧 Demostración de ConfigMaps y Secrets</h1>
+        
+        <h2>Información del Pod</h2>
+        <div class="config">
+            <div class="env-var"><strong>Hostname:</strong> <span id="hostname"></span></div>
+            <div class="env-var"><strong>Timestamp:</strong> <span id="timestamp"></span></div>
+        </div>
+
+        <h2>Configuración desde ConfigMap</h2>
+        <div class="config">
+            <p>Esta información proviene de variables de entorno configuradas desde un ConfigMap:</p>
+            <div class="env-var"><strong>DATABASE_URL:</strong> <span id="db-url"></span></div>
+            <div class="env-var"><strong>LOG_LEVEL:</strong> <span id="log-level"></span></div>
+            <div class="env-var"><strong>MAX_CONNECTIONS:</strong> <span id="max-conn"></span></div>
+        </div>
+
+        <h2>Información Sensible desde Secret</h2>
+        <div class="secret">
+            <p>Esta información proviene de variables de entorno configuradas desde un Secret:</p>
+            <div class="env-var"><strong>API_KEY:</strong> <span id="api-key">[HIDDEN]</span></div>
+            <div class="env-var"><strong>DB_PASSWORD:</strong> <span id="db-pass">[HIDDEN]</span></div>
+            <div class="env-var"><strong>ADMIN_EMAIL:</strong> <span id="admin-email"></span></div>
+        </div>
+
+        <h2>Archivos de Configuración Montados</h2>
+        <div class="config">
+            <p>Los siguientes archivos están montados desde ConfigMaps:</p>
+            <ul>
+                <li><code>/etc/config/app.properties</code> - Configuración principal de la aplicación</li>
+                <li><code>/etc/nginx/conf.d/default.conf</code> - Configuración de Nginx</li>
+            </ul>
+        </div>
+
+        <script>
+            // Simulamos la obtención de variables de entorno
+            // En una aplicación real, estas vendrían del backend
+            document.getElementById('hostname').textContent = window.location.hostname;
+            document.getElementById('timestamp').textContent = new Date().toISOString();
+            document.getElementById('db-url').textContent = 'mysql://mysql-service:3306/myapp';
+            document.getElementById('log-level').textContent = 'info';
+            document.getElementById('max-conn').textContent = '100';
+            document.getElementById('admin-email').textContent = 'admin@example.com';
+        </script>
+    </body>
+    </html>
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-demo-service
+  labels:
+    app: config-demo
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30082
+    protocol: TCP
+  selector:
+    app: config-demo

@@ -1,0 +1,22 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: port-mapping-cluster
+nodes:
+- role: control-plane
+  extraPortMappings:
+  # Web application
+  - containerPort: 30001
+    hostPort: 3000
+    protocol: TCP
+  # Database
+  - containerPort: 30002
+    hostPort: 5432
+    protocol: TCP
+  # Monitoring
+  - containerPort: 30003
+    hostPort: 9090
+    protocol: TCP
+  # Dashboard
+  - containerPort: 30004
+    hostPort: 8080
+    protocol: TCP

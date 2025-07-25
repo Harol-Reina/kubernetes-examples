@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1-deployment
+  labels:
+    app: app1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      labels:
+        app: app1
+    spec:
+      containers:
+      - name: app1
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: app1-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      volumes:
+      - name: app1-content
+        configMap:
+          name: app1-content
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app1-content
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>App 1 - Ingress Demo</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                text-align: center;
+                padding: 50px;
+                margin: 0;
+            }
+            .container {
+                background: rgba(255,255,255,0.1);
+                padding: 40px;
+                border-radius: 10px;
+                backdrop-filter: blur(10px);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Aplicación 1</h1>
+            <p>Esta es la <strong>Aplicación 1</strong> accesible a través de Ingress</p>
+            <p>URL: <strong>app1.local</strong></p>
+            <p>Pod: <span id="hostname"></span></p>
+            <p>Timestamp: <span id="time"></span></p>
+            
+            <hr style="margin: 30px 0;">
+            
+            <h3>Navegación</h3>
+            <p><a href="http://app2.local" style="color: #ffeb3b;">→ Ir a Aplicación 2</a></p>
+        </div>
+        
+        <script>
+            document.getElementById('hostname').textContent = window.location.hostname;
+            document.getElementById('time').textContent = new Date().toLocaleString();
+        </script>
+    </body>
+    </html>
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1-service
+  labels:
+    app: app1
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: app1

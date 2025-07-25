@@ -1,0 +1,74 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: "192.168.1.100"
+  bindPort: 6443
+nodeRegistration:
+  criSocket: "unix:///var/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    cgroup-driver: "systemd"
+    container-runtime: "remote"
+    container-runtime-endpoint: "unix:///var/run/containerd/containerd.sock"
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+kubernetesVersion: "v1.28.2"
+clusterName: "production-cluster"
+controlPlaneEndpoint: "k8s-api.example.com:6443"
+networking:
+  serviceSubnet: "10.96.0.0/12"
+  podSubnet: "10.244.0.0/16"
+  dnsDomain: "cluster.local"
+apiServer:
+  certSANs:
+  - "k8s-api.example.com"
+  - "192.168.1.100"
+  - "127.0.0.1"
+  extraArgs:
+    audit-log-maxage: "30"
+    audit-log-maxbackup: "10"
+    audit-log-maxsize: "100"
+    audit-log-path: "/var/log/kubernetes/audit.log"
+    enable-admission-plugins: "NodeRestriction,ResourceQuota,PodSecurityPolicy"
+  extraVolumes:
+  - name: "audit-logs"
+    hostPath: "/var/log/kubernetes"
+    mountPath: "/var/log/kubernetes"
+    pathType: DirectoryOrCreate
+controllerManager:
+  extraArgs:
+    bind-address: "0.0.0.0"
+    cluster-signing-duration: "8760h0m0s"
+scheduler:
+  extraArgs:
+    bind-address: "0.0.0.0"
+etcd:
+  local:
+    dataDir: "/var/lib/etcd"
+    extraArgs:
+      listen-metrics-urls: "http://0.0.0.0:2381"
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: KubeletConfiguration
+cgroupDriver: "systemd"
+clusterDNS:
+- "10.96.0.10"
+clusterDomain: "cluster.local"
+resolvConf: "/etc/resolv.conf"
+runtimeRequestTimeout: "10m"
+systemReserved:
+  cpu: "100m"
+  memory: "256Mi"
+kubeReserved:
+  cpu: "100m"
+  memory: "256Mi"
+evictionHard:
+  memory.available: "100Mi"
+  nodefs.available: "10%"
+  imagefs.available: "15%"
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: "ipvs"
+ipvs:
+  strictARP: true

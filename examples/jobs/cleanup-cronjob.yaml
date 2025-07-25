@@ -1,0 +1,213 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cleanup-cronjob
+  labels:
+    app: cleanup
+spec:
+  # Ejecutar cada 5 minutos (para demo), en producción sería diario/semanal
+  schedule: "*/5 * * * *"  # Formato: minuto hora día-mes mes día-semana
+  
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: cleanup
+        spec:
+          containers:
+          - name: cleanup-container
+            image: busybox
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - |
+              echo "🧹 Iniciando tarea de limpieza programada..."
+              echo "Fecha: $(date)"
+              echo "Hostname: $(hostname)"
+              
+              # Simular limpieza de archivos temporales
+              echo "🗑️  Limpiando archivos temporales..."
+              sleep 3
+              
+              # Simular limpieza de logs antiguos
+              echo "📝 Limpiando logs antiguos..."
+              sleep 2
+              
+              # Simular limpieza de cache
+              echo "💾 Limpiando cache..."
+              sleep 2
+              
+              # Generar reporte de limpieza
+              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+              echo "📊 Reporte de limpieza - $TIMESTAMP" > /reports/cleanup-$TIMESTAMP.txt
+              echo "- Archivos temporales: 45 eliminados" >> /reports/cleanup-$TIMESTAMP.txt
+              echo "- Logs antiguos: 12 archivos eliminados" >> /reports/cleanup-$TIMESTAMP.txt
+              echo "- Cache limpiado: 2.3GB liberados" >> /reports/cleanup-$TIMESTAMP.txt
+              
+              echo "📄 Reporte generado:"
+              cat /reports/cleanup-$TIMESTAMP.txt
+              
+              echo "✅ Tarea de limpieza completada exitosamente!"
+            
+            volumeMounts:
+            - name: reports-storage
+              mountPath: /reports
+            
+            resources:
+              requests:
+                memory: "32Mi"
+                cpu: "100m"
+              limits:
+                memory: "64Mi"
+                cpu: "200m"
+                
+          volumes:
+          - name: reports-storage
+            emptyDir: {}
+            
+          restartPolicy: OnFailure
+  
+  # Configuración del CronJob
+  successfulJobsHistoryLimit: 3  # Mantener 3 jobs exitosos
+  failedJobsHistoryLimit: 1      # Mantener 1 job fallido
+  concurrencyPolicy: Forbid      # No permitir ejecuciones concurrentes
+
+---
+# CronJob para backup diario (ejemplo más realista)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-backup-cronjob
+  labels:
+    app: daily-backup
+spec:
+  # Ejecutar diariamente a las 2:00 AM
+  schedule: "0 2 * * *"
+  
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: daily-backup
+        spec:
+          containers:
+          - name: backup-container
+            image: busybox
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - |
+              echo "🌙 Iniciando backup nocturno..."
+              DATE=$(date +%Y-%m-%d)
+              echo "Fecha: $DATE"
+              
+              # Simular backup completo
+              echo "💾 Realizando backup completo del sistema..."
+              
+              # Base de datos
+              echo "🗄️  Backup de base de datos..."
+              sleep 10
+              
+              # Archivos de aplicación
+              echo "📁 Backup de archivos de aplicación..."
+              sleep 15
+              
+              # Configuraciones
+              echo "⚙️  Backup de configuraciones..."
+              sleep 5
+              
+              # Comprimir y almacenar
+              echo "🗜️  Comprimiendo y almacenando..."
+              sleep 8
+              
+              # Verificar integridad
+              echo "🔍 Verificando integridad del backup..."
+              sleep 3
+              
+              echo "✅ Backup nocturno completado para $DATE"
+              echo "📊 Estadísticas:"
+              echo "  - Tamaño total: 15.2GB"
+              echo "  - Tiempo total: $(date)"
+              echo "  - Estado: EXITOSO"
+            
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "250m"
+              limits:
+                memory: "256Mi"
+                cpu: "500m"
+                
+          restartPolicy: OnFailure
+  
+  successfulJobsHistoryLimit: 7   # Mantener una semana de backups
+  failedJobsHistoryLimit: 3       # Mantener 3 intentos fallidos
+  concurrencyPolicy: Forbid
+
+---
+# CronJob para mantenimiento semanal
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weekly-maintenance-cronjob
+  labels:
+    app: weekly-maintenance
+spec:
+  # Ejecutar los domingos a las 3:00 AM
+  schedule: "0 3 * * 0"
+  
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: weekly-maintenance
+        spec:
+          containers:
+          - name: maintenance-container
+            image: busybox
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - |
+              echo "🔧 Iniciando mantenimiento semanal..."
+              WEEK=$(date +%Y-W%U)
+              echo "Semana: $WEEK"
+              
+              # Optimización de base de datos
+              echo "🗄️  Optimizando base de datos..."
+              sleep 20
+              
+              # Limpieza profunda
+              echo "🧹 Realizando limpieza profunda..."
+              sleep 15
+              
+              # Actualización de índices
+              echo "📇 Actualizando índices..."
+              sleep 10
+              
+              # Verificación de integridad
+              echo "🔍 Verificando integridad del sistema..."
+              sleep 12
+              
+              # Reporte de salud
+              echo "📊 Generando reporte de salud semanal..."
+              sleep 5
+              
+              echo "✅ Mantenimiento semanal completado para $WEEK"
+            
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "500m"
+              limits:
+                memory: "512Mi"
+                cpu: "1000m"
+                
+          restartPolicy: OnFailure
+  
+  successfulJobsHistoryLimit: 4   # Mantener un mes
+  failedJobsHistoryLimit: 2
+  concurrencyPolicy: Forbid

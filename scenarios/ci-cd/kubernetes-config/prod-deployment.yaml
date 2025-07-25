@@ -1,0 +1,167 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mi-app-prod
+  labels:
+    app: mi-app
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mi-app
+      environment: production
+  template:
+    metadata:
+      labels:
+        app: mi-app
+        environment: production
+    spec:
+      containers:
+      - name: app
+        image: mi-app:latest
+        ports:
+        - containerPort: 3000
+        
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: prod-secrets
+              key: database_url
+        - name: LOG_LEVEL
+          value: "info"
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        
+        # Configuración de seguridad para producción
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mi-app-prod-service
+  labels:
+    app: mi-app
+    environment: production
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: mi-app
+    environment: production
+
+---
+# Secret para producción (valores de ejemplo)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prod-secrets
+type: Opaque
+stringData:
+  database_url: "postgresql://user:pass@prod-db:5432/myapp"
+  api_key: "prod-api-key-change-me"
+  jwt_secret: "prod-jwt-secret-change-me"
+
+---
+# HPA para producción
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mi-app-prod-hpa
+  labels:
+    app: mi-app
+    environment: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mi-app-prod
+  
+  minReplicas: 3
+  maxReplicas: 20
+  
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# NetworkPolicy para seguridad en producción
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mi-app-prod-netpol
+  labels:
+    app: mi-app
+    environment: production
+spec:
+  podSelector:
+    matchLabels:
+      app: mi-app
+      environment: production
+  
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3000
+  
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443  # HTTPS
+    - protocol: TCP
+      port: 53   # DNS
+    - protocol: UDP
+      port: 53   # DNS
