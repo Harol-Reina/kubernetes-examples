@@ -21,7 +21,7 @@ spec:
       hostPID: true
       containers:
       - name: node-exporter
-        image: prom/node-exporter:v1.7.0
+        image: prom/node-exporter:master
         # Recursos optimizados para bare metal
         resources:
           requests:
