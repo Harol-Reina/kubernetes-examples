@@ -169,7 +169,7 @@ data:
           severity: critical
         annotations:
           summary: "Low disk space on {{ $labels.instance }}"
-          description: "Disk usage on {{ $labels.instance }} is above 90%. Available: {{ $value | humanizeBytes }}"
+          description: "Disk usage on {{ $labels.instance }} is above 90%. Available: {{ $value }}"
           
       - alert: HighCPUUsage
         expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
