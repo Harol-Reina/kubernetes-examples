@@ -92,11 +92,10 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
+  # Para bare metal, usar local storage si está disponible
+  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi    # Reducido de 50Gi para bare metal
-  # Para bare metal, usar local storage si está disponible
-  # storageClassName: local-storage
-  # 
   # Si no tienes StorageClass, puedes usar hostPath (menos recomendado):
   # Crear manualmente un PV con hostPath en cada nodo
