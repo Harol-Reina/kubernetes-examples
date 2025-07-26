@@ -31,7 +31,7 @@ read -p "Opción (1-2): " option
 case $option in
     1)
         echo "📦 Instalando desde repositorio oficial..."
-        kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+        kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
         ;;
     2)
         echo "📦 Instalando desde configuración local..."

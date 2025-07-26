@@ -11,6 +11,41 @@ metadata:
     name: monitoring
 
 ---
+# PVCs para almacenamiento persistente
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: monitoring
+  labels:
+    app: prometheus
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: monitoring
+  labels:
+    app: grafana
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+
+---
 # Prometheus ServiceAccount
 apiVersion: v1
 kind: ServiceAccount
@@ -184,8 +219,8 @@ spec:
         configMap:
           name: prometheus-config
       - name: prometheus-storage
-        emptyDir:
-          sizeLimit: 5Gi
+        persistentVolumeClaim:
+          claimName: prometheus-pvc
 
 ---
 # Prometheus Service
@@ -607,8 +642,8 @@ spec:
         configMap:
           name: grafana-datasources
       - name: grafana-storage
-        emptyDir:
-          sizeLimit: 2Gi
+        persistentVolumeClaim:
+          claimName: grafana-pvc
 
 ---
 # Grafana Service

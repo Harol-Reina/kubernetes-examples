@@ -44,6 +44,8 @@ Stack de observabilidad optimizado para clusters bare metal con recursos limitad
 ## 🚀 Instalación Rápida
 
 ### Prerrequisitos para Bare Metal
+
+#### 1. Recursos Mínimos
 ```bash
 # Verificar que el cluster tiene suficientes recursos
 kubectl top nodes
@@ -52,6 +54,27 @@ kubectl describe nodes
 # Verificar espacio disponible (necesario: ~8GB total)
 kubectl get nodes -o wide
 ```
+
+#### 2. StorageClass (Requerido)
+```bash
+# Verificar StorageClass disponible
+kubectl get storageclass
+
+# Si no tienes local-path, instalar Local Path Provisioner:
+kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+
+# Configurar como default
+kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
+
+#### 3. Directorio en Nodos
+```bash
+# En cada nodo, crear directorio para storage
+sudo mkdir -p /opt/local-path-provisioner
+sudo chmod 755 /opt/local-path-provisioner
+```
+
+## 🚀 Instalación
 
 ### Opción 1: All-in-One (Recomendado)
 ```bash

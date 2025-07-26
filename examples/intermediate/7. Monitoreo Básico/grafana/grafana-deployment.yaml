@@ -77,7 +77,6 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
-        # Seguridad básica
         securityContext:
           runAsNonRoot: true
           runAsUser: 472
@@ -95,19 +94,3 @@ spec:
       - name: grafana-dashboards
         configMap:
           name: grafana-dashboards
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: grafana-pvc
-  namespace: monitoring
-  labels:
-    app: grafana
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi    # Reducido de 10Gi para bare metal
-  # Para bare metal con local storage
-  # storageClassName: local-storage

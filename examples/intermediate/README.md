@@ -39,6 +39,19 @@ Aplicaciones complejas con múltiples servicios:
 ### 6. Múltiples Aplicaciones con Ingress
 Routing avanzado para múltiples aplicaciones usando el mismo Ingress
 
+### 7. Monitoreo Básico
+Stack de monitoreo optimizado para bare metal con recursos limitados:
+- **Prometheus**: 5GB storage, 7 días retención
+- **Grafana**: 2GB storage, dashboards optimizados
+- **Node Exporter**: Métricas esenciales
+- **Storage persistente**: Usa StorageClass local-path
+
+### 8. Storage Local
+Configuración de almacenamiento persistente para bare metal:
+- **Local Path Provisioner**: StorageClass dinámico
+- **Configuraciones**: Multiple StorageClasses para diferentes usos
+- **Ejemplos**: PVCs y Pods con almacenamiento local
+
 ## 🎯 Ejemplos Completos Incluidos
 
 ### Stack Completo Web + Base de Datos
@@ -88,6 +101,7 @@ kubectl get secret app-secret -o yaml
 ## 📝 Notas
 
 - Los Ingress requieren un Ingress Controller instalado
-- Los PVC requieren un StorageClass configurado
+- Los PVC requieren un StorageClass configurado (recomendado: local-path para bare metal)
 - Los Secrets son codificados en base64 automáticamente
 - Los ConfigMaps pueden ser actualizados sin recrear pods
+- Para almacenamiento persistente en bare metal, usar Local Path Provisioner
