@@ -6,47 +6,39 @@ metadata:
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 30s     # Menos frecuente para ahorrar recursos
-      evaluation_interval: 30s # Menos frecuente para ahorrar recursos
-      
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
     rule_files:
       - "alert_rules.yml"
       
-    # Sin alertmanager para simplicidad en bare metal
-    # alerting:
-    #   alertmanagers:
-    #   - static_configs:
-    #     - targets:
-    #       - alertmanager:9093
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
           
     scrape_configs:
-      # Kubernetes API Server (solo métricas básicas)
+      # Kubernetes API Server
       - job_name: 'kubernetes-apiservers'
         kubernetes_sd_configs:
         - role: endpoints
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-          insecure_skip_verify: true  # Para clusters sin certificados firmados
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
         - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
           action: keep
           regex: default;kubernetes;https
-        # Filtrar solo métricas esenciales
-        metric_relabel_configs:
-        - source_labels: [__name__]
-          regex: 'apiserver_(request_duration_seconds|request_total|up)'
-          action: keep
           
-      # Kubernetes nodes (kubelet) - optimizado
+      # Kubernetes nodes (kubelet)
       - job_name: 'kubernetes-nodes'
         kubernetes_sd_configs:
         - role: node
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-          insecure_skip_verify: true  # Para clusters sin certificados firmados
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
         - action: labelmap
@@ -57,11 +49,6 @@ data:
           regex: (.+)
           target_label: __metrics_path__
           replacement: /api/v1/nodes/${1}/proxy/metrics
-        # Solo métricas esenciales del kubelet
-        metric_relabel_configs:
-        - source_labels: [__name__]
-          regex: 'kubelet_(running_containers|running_pods|volume_stats.*)'
-          action: keep
           
       # Node Exporter - métricas selectivas para bare metal
       - job_name: 'node-exporter'
