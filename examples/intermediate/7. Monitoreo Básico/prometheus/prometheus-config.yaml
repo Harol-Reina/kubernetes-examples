@@ -128,7 +128,7 @@ data:
       # Kube State Metrics
       - job_name: 'kube-state-metrics'
         static_configs:
-        - targets: ['kube-state-metrics:8080']
+        - targets: ['kube-state-metrics.kube-system:8080']
 
       # Node Exporter - Métricas del sistema
       - job_name: 'node-exporter'
