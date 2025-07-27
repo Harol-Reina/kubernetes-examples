@@ -97,4 +97,3 @@ spec:
     targetPort: 9100
     protocol: TCP
   type: ClusterIP
-  clusterIP: None
