@@ -55,6 +55,9 @@ spec:
           mountPath: /host/root
           mountPropagation: HostToContainer
           readOnly: true
+        - name: systemd
+          mountPath: /host/run/systemd
+          readOnly: true
         livenessProbe:
           httpGet:
             path: /metrics
@@ -77,6 +80,9 @@ spec:
       - name: root
         hostPath:
           path: /
+      - name: systemd
+        hostPath:
+          path: /run/systemd
 ---
 apiVersion: v1
 kind: Service
