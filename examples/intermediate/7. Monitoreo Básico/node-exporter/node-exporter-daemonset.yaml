@@ -5,7 +5,6 @@ metadata:
   namespace: monitoring
   labels:
     app: node-exporter
-    component: monitoring
 spec:
   selector:
     matchLabels:
@@ -14,84 +13,37 @@ spec:
     metadata:
       labels:
         app: node-exporter
-        component: monitoring
     spec:
-      serviceAccountName: node-exporter
       hostNetwork: true
       hostPID: true
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
       containers:
       - name: node-exporter
         image: prom/node-exporter:master
-        # Recursos optimizados para bare metal
+        args:
+        - '--path.procfs=/host/proc'
+        - '--path.sysfs=/host/sys'
+        - '--path.rootfs=/host/root'
+        - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+        - '--collector.systemd'
+        - '--collector.processes'
+        ports:
+        - containerPort: 9100
+          name: metrics
+          protocol: TCP
         resources:
           requests:
-            cpu: 50m
-            memory: 32Mi
+            memory: "64Mi"
+            cpu: "50m"
           limits:
-            cpu: 200m
-            memory: 64Mi
-        args:
-        # Configuración optimizada para bare metal
-        - --path.procfs=/host/proc
-        - --path.sysfs=/host/sys
-        - --path.rootfs=/host/root
-        - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
-        - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$$
-        # Collectors optimizados para reducir overhead
-        - --collector.cpu
-        - --collector.filesystem
-        - --collector.loadavg
-        - --collector.meminfo
-        - --collector.diskstats
-        - --collector.netdev
-        - --collector.systemd
-        - --collector.uname
-        - --no-collector.arp
-        - --no-collector.bcache
-        - --no-collector.bonding
-        - --no-collector.conntrack
-        - --no-collector.entropy
-        - --no-collector.edac
-        - --no-collector.hwmon
-        - --no-collector.infiniband
-        - --no-collector.ipvs
-        - --no-collector.mdadm
-        - --no-collector.nfs
-        - --no-collector.nfsd
-        - --no-collector.powersupplyclass
-        - --no-collector.pressure
-        - --no-collector.rapl
-        - --no-collector.schedstat
-        - --no-collector.sockstat
-        - --no-collector.thermal_zone
-        - --no-collector.time
-        - --no-collector.timex
-        - --no-collector.udp_queues
-        - --no-collector.xfs
-        - --no-collector.zfs
-        ports:
-        - name: metrics
-          containerPort: 9100
-          hostPort: 9100
-          protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /metrics
-            port: 9100
-          initialDelaySeconds: 30
-          periodSeconds: 60
-          timeoutSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /metrics
-            port: 9100
-          initialDelaySeconds: 5
-          periodSeconds: 30
-          timeoutSeconds: 5
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 65534
-          readOnlyRootFilesystem: true
+            memory: "128Mi"
+            cpu: "100m"
         volumeMounts:
         - name: proc
           mountPath: /host/proc
@@ -103,12 +55,18 @@ spec:
           mountPath: /host/root
           mountPropagation: HostToContainer
           readOnly: true
-      tolerations:
-      # Permite ejecutar en todos los nodos, incluyendo master
-      - effect: NoSchedule
-        operator: Exists
-      - effect: NoExecute
-        operator: Exists
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 30
+          periodSeconds: 5
       volumes:
       - name: proc
         hostPath:
@@ -119,10 +77,6 @@ spec:
       - name: root
         hostPath:
           path: /
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
 ---
 apiVersion: v1
 kind: Service
@@ -131,13 +85,16 @@ metadata:
   namespace: monitoring
   labels:
     app: node-exporter
-    component: monitoring
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9100"
 spec:
-  type: ClusterIP
+  selector:
+    app: node-exporter
   ports:
   - name: metrics
     port: 9100
     targetPort: 9100
     protocol: TCP
-  selector:
-    app: node-exporter
+  type: ClusterIP
+  clusterIP: None
