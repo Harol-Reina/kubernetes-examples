@@ -26,6 +26,8 @@ spec:
       containers:
       - name: node-exporter
         image: prom/node-exporter:master
+        securityContext:
+          privileged: true
         args:
         - '--path.procfs=/host/proc'
         - '--path.sysfs=/host/sys'
@@ -48,14 +50,16 @@ spec:
           httpGet:
             path: /metrics
             port: 9100
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 20
         readinessProbe:
           httpGet:
             path: /metrics
             port: 9100
           initialDelaySeconds: 30
-          periodSeconds: 5
+          timeoutSeconds: 10
+          periodSeconds: 15
         volumeMounts:
         - name: proc
           mountPath: /host/proc
