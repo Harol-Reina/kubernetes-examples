@@ -50,7 +50,7 @@ data:
           target_label: __metrics_path__
           replacement: /api/v1/nodes/${1}/proxy/metrics
           
-      # Node Exporter - métricas selectivas para bare metal
+      # Kubernetes node-exporter
       - job_name: 'node-exporter'
         kubernetes_sd_configs:
         - role: endpoints
@@ -62,13 +62,8 @@ data:
           target_label: instance
         - source_labels: [__meta_kubernetes_endpoint_address_target_name]
           target_label: node
-        # Solo métricas críticas para bare metal
-        metric_relabel_configs:
-        - source_labels: [__name__]
-          regex: 'node_(cpu_seconds_total|memory_.*|filesystem_.*|network_.*|load.*|up)'
-          action: keep
           
-      # Kubernetes service endpoints (simplificado)
+      # Kubernetes service endpoints
       - job_name: 'kubernetes-service-endpoints'
         kubernetes_sd_configs:
         - role: endpoints
@@ -76,6 +71,10 @@ data:
         - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
           action: keep
           regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+          action: replace
+          target_label: __scheme__
+          regex: (https?)
         - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
           action: replace
           target_label: __metrics_path__
@@ -94,7 +93,7 @@ data:
           action: replace
           target_label: kubernetes_name
           
-      # Kubernetes pods (solo los anotados)
+      # Kubernetes pods
       - job_name: 'kubernetes-pods'
         kubernetes_sd_configs:
         - role: pod
@@ -119,56 +118,45 @@ data:
         - source_labels: [__meta_kubernetes_pod_name]
           action: replace
           target_label: kubernetes_pod_name
-        # Filtrar solo métricas básicas de pods
-        metric_relabel_configs:
-        - source_labels: [__name__]
-          regex: 'container_(cpu_usage_seconds_total|memory_working_set_bytes|network_.*|up)'
-          action: keep
-        
+          
+      # cAdvisor - Métrica
+      - job_name: 'kubernetes-cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+
+      # Kube State Metrics
+      - job_name: 'kube-state-metrics'
+        static_configs:
+        - targets: ['kube-state-metrics:8080']
+
   alert_rules.yml: |
     groups:
-    - name: kubernetes-critical-bare-metal
+    - name: kubernetes-critical
       rules:
-      # Alertas críticas para bare metal con recursos limitados
-      
       - alert: NodeDown
         expr: up{job="kubernetes-nodes"} == 0
-        for: 3m  # Más rápido que producción por recursos limitados
+        for: 5m
         labels:
           severity: critical
         annotations:
           summary: "Node {{ $labels.instance }} is down"
-          description: "Node {{ $labels.instance }} has been down for more than 3 minutes."
-          
-      - alert: HighMemoryUsage
-        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "High memory usage on {{ $labels.instance }}"
-          description: "Memory usage on {{ $labels.instance }} is above 85% ({{ $value | humanizePercentage }})."
-          
-      - alert: DiskSpaceLow
-        expr: node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"} < 0.10
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Low disk space on {{ $labels.instance }}"
-          description: "Disk usage on {{ $labels.instance }} is above 90%. Available: {{ $value }}"
-          
-      - alert: HighCPUUsage
-        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
-        for: 10m  # Más tolerante en bare metal
-        labels:
-          severity: warning
-        annotations:
-          summary: "High CPU usage on {{ $labels.instance }}"
-          description: "CPU usage on {{ $labels.instance }} is above 80% ({{ $value | printf \"%.2f\" }}%)."
+          description: "Node {{ $labels.instance }} has been down for more than 5 minutes."
           
       - alert: PodCrashLooping
-        expr: rate(kube_pod_container_status_restarts_total[10m]) > 0
+        expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
         for: 5m
         labels:
           severity: warning
@@ -176,21 +164,29 @@ data:
           summary: "Pod {{ $labels.pod }} is crash looping"
           description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently."
           
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage on {{ $labels.instance }} is above 90%."
+          
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage on {{ $labels.instance }} is above 95%."
+          
       - alert: PodNotReady
         expr: kube_pod_status_ready{condition="false"} == 1
-        for: 10m  # Más tolerante en bare metal
+        for: 5m
         labels:
           severity: warning
         annotations:
           summary: "Pod {{ $labels.pod }} not ready"
-          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 10 minutes."
-          
-      # Alerta específica para el stack de monitoreo
-      - alert: MonitoringStackDown
-        expr: up{job=~"prometheus|grafana"} == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Monitoring component {{ $labels.job }} is down"
-          description: "Monitoring component {{ $labels.job }} has been down for more than 2 minutes."
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 5 minutes."
