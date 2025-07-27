@@ -44,20 +44,6 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "100m"
-        volumeMounts:
-        - name: proc
-          mountPath: /host/proc
-          readOnly: true
-        - name: sys
-          mountPath: /host/sys
-          readOnly: true
-        - name: root
-          mountPath: /host/root
-          mountPropagation: HostToContainer
-          readOnly: true
-        - name: systemd
-          mountPath: /host/run/systemd
-          readOnly: true
         livenessProbe:
           httpGet:
             path: /metrics
@@ -70,6 +56,20 @@ spec:
             port: 9100
           initialDelaySeconds: 30
           periodSeconds: 5
+        volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: root
+          mountPath: /host/root
+          readOnly: true
+          mountPropagation: HostToContainer
+        - name: systemd
+          mountPath: /host/run/systemd
+          readOnly: true
       volumes:
       - name: proc
         hostPath:
